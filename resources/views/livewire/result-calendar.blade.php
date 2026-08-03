@@ -1,7 +1,7 @@
 <div class="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div><h2 class="font-extrabold">{{ $readOnly ? 'Общий календарь' : 'Календарь робота' }}</h2><p class="text-sm text-stone-500">{{ $readOnly ? 'Сумма результатов всех роботов по дням' : 'Выберите день для ручного ввода' }}</p></div>
-        @if(!$readOnly)<span class="rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold text-green-900">{{ $account?->name ?: 'Счёт не настроен' }}</span>@endif
+        @if(!$readOnly)<span class="rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold text-green-900">{{ $account ? 'Счёт настроен' : 'Счёт не настроен' }}</span>@endif
     </div>
     <div class="mb-4 flex items-center justify-between rounded-xl bg-stone-50 p-2">
         <button wire:click="previousMonth" class="btn-secondary px-3" aria-label="Предыдущий месяц">←</button>

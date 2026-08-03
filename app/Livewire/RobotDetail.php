@@ -25,6 +25,7 @@ class RobotDetail extends Component
     public bool $isActive = true;
     public string $calendarMonth;
     public ?string $selectedDate = null;
+    public int $accountRevision = 0;
 
     public function mount(Robot $robot): void
     {
@@ -57,7 +58,9 @@ class RobotDetail extends Component
         $account = $this->robot->account()->firstOrNew(); $old = $account->exists ? $account->toArray() : null;
         $account->fill(['name' => $data['name'], 'broker' => $data['broker'] ?: null, 'platform' => $data['platform'], 'external_login' => $data['externalLogin'] ?: null, 'currency' => strtoupper($data['currency']), 'initial_deposit' => $data['initialDeposit'], 'current_balance' => $data['currentBalance'], 'is_active' => $data['isActive']])->save();
         AuditLog::query()->create(['user_id' => auth()->id(), 'action' => $old ? 'account.updated' : 'account.created', 'auditable_type' => TradingAccount::class, 'auditable_id' => $account->id, 'old_values' => $old, 'new_values' => $account->toArray(), 'ip_address' => request()->ip(), 'user_agent' => request()->userAgent()]);
-        $this->robot->refresh(); session()->flash('account-status', 'Торговый счёт сохранён.');
+        $this->robot->refresh();
+        $this->accountRevision++;
+        session()->flash('account-status', 'Счёт настроен.');
     }
 
     public function render(): View
