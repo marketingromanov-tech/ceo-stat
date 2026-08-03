@@ -46,6 +46,25 @@ class RobotManager extends Component
         $this->audit('robot.status_changed', $robot, $old);
     }
 
+    public function delete(int $id): void
+    {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+
+        $robot = Robot::query()->with('account')->findOrFail($id);
+        $old = $robot->toArray();
+        $old['account'] = $robot->account?->toArray();
+        $old['results_count'] = $robot->account?->results()->count() ?? 0;
+
+        $this->audit('robot.deleted', $robot, $old);
+        $robot->delete();
+
+        if ($this->editingId === $id) {
+            $this->cancel();
+        }
+
+        session()->flash('status', 'Робот, его счёт и вся история удалены.');
+    }
+
     public function cancel(): void
     {
         $this->reset('editingId', 'name', 'description');
