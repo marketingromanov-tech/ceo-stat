@@ -1,0 +1,37 @@
+<div class="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div><h2 class="font-extrabold">{{ $readOnly ? 'Общий календарь' : 'Календарь робота' }}</h2><p class="text-sm text-stone-500">{{ $readOnly ? 'Сумма результатов всех роботов по дням' : 'Выберите день для ручного ввода' }}</p></div>
+        @if(!$readOnly)<span class="rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold text-green-900">{{ $account?->name ?: 'Счёт не настроен' }}</span>@endif
+    </div>
+    <div class="mb-4 flex items-center justify-between rounded-xl bg-stone-50 p-2">
+        <button wire:click="previousMonth" class="btn-secondary px-3" aria-label="Предыдущий месяц">←</button>
+        <strong class="capitalize">{{ $monthLabel }}</strong>
+        <button wire:click="nextMonth" class="btn-secondary px-3" aria-label="Следующий месяц">→</button>
+    </div>
+    <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-bold text-stone-400">
+        @foreach(['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] as $weekday)<div class="py-2">{{ $weekday }}</div>@endforeach
+        @for($i = 0; $i < $leadingBlanks; $i++)<div></div>@endfor
+        @foreach($days as $day)
+            @php($result = $results->get($day->format('Y-m-d')))
+            @php($isLocked = !$readOnly && $trackingStartedAt && $day->format('Y-m-d') < $trackingStartedAt)
+            <button wire:click="selectDate('{{ $day->format('Y-m-d') }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
+                class="relative min-h-16 rounded-xl border p-1.5 text-left transition sm:min-h-20 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-900 ring-2 ring-green-900/15' : 'border-stone-200' }} {{ $isLocked ? 'cursor-not-allowed bg-stone-100 opacity-60' : ($day->isToday() ? 'bg-amber-50 hover:border-stone-400' : 'bg-white hover:border-stone-400') }}">
+                <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
+                @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
+                @if($result)<span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 0, ',', ' ') }}</span>@endif
+            </button>
+        @endforeach
+    </div>
+    @if(session('calendar-status'))<p class="mt-4 rounded-xl bg-green-100 px-4 py-3 text-sm font-bold text-green-900">{{ session('calendar-status') }}</p>@endif
+    @if(!$readOnly && $selectedDate && in_array(auth()->user()->role->value, ['admin', 'operator'], true))
+        <div class="mt-5 rounded-2xl bg-stone-50 p-4">
+            <div class="mb-4 flex items-center justify-between"><div><p class="form-label">История за день</p><strong>{{ \Carbon\CarbonImmutable::parse($selectedDate)->format('d.m.Y') }}</strong></div><span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-stone-500">{{ $dayResults->count() }} операций</span></div>
+            <div class="mb-4 space-y-2">@forelse($dayResults as $entry)<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3"><div class="flex items-center gap-3"><span class="grid size-7 place-items-center rounded-lg bg-stone-100 text-xs font-extrabold">{{ $entry->sequence }}</span><div><strong class="{{ $entry->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $entry->amount > 0 ? '+' : '' }}{{ number_format((float)$entry->amount, 2, ',', ' ') }}</strong>@if($entry->comment)<small class="ml-2 text-stone-500">{{ $entry->comment }}</small>@endif</div></div><div class="flex gap-2"><button type="button" wire:click="editResult({{ $entry->id }})" class="btn-secondary">Изменить</button><button type="button" wire:click="deleteResult({{ $entry->id }})" wire:confirm="Удалить эту операцию?" class="btn-secondary text-red-700">Удалить</button></div></div>@empty<p class="rounded-xl bg-white p-3 text-sm text-stone-500">Операций пока нет. Если поступлений не было, добавьте 0.</p>@endforelse</div>
+        <form wire:submit="save" class="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <div><label class="form-label" for="amount">Сумма</label><input id="amount" wire:model="amount" class="form-input" inputmode="decimal" placeholder="Например, 125.50">@error('amount')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+            <div><label class="form-label" for="comment">Комментарий</label><input id="comment" wire:model="comment" class="form-input" placeholder="Необязательно"></div>
+            <div class="flex gap-2"><button class="btn-primary">{{ $editingResultId ? 'Обновить' : 'Добавить' }}</button>@if($editingResultId)<button type="button" wire:click="selectDate('{{ $selectedDate }}')" class="btn-secondary">Отмена</button>@endif</div>
+        </form>
+        </div>
+    @endif
+</div>

@@ -1,0 +1,17 @@
+/.phpunit.cache
+/.phpunit.result.cache
+/node_modules
+/public/build
+/public/hot
+/storage/*.key
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/vendor
+.env
+.env.local
+.env.backup
+.DS_Store
+npm-debug.log
+yarn-error.log
