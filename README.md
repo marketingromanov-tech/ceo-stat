@@ -12,6 +12,33 @@
 
 ## Первый запуск
 
+### Docker Desktop (рекомендуется для Windows)
+
+```bash
+git clone https://github.com/marketingromanov-tech/ceo-stat.git
+cd ceo-stat
+git switch agent/calendar-robots-accounts
+docker compose up --build -d
+```
+
+После запуска откройте `http://localhost:8080`.
+
+Демонстрационный вход: `admin@ceostat.local` / `ChangeMe123!`.
+
+Остановить проект:
+
+```bash
+docker compose down
+```
+
+Полностью удалить локальную базу и начать заново:
+
+```bash
+docker compose down -v
+```
+
+### Без Docker
+
 ```bash
 cp .env.example .env
 composer install
