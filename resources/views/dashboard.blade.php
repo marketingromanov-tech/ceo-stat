@@ -2,10 +2,10 @@
     <div class="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <header class="mb-7"><h1 class="text-2xl font-extrabold">Результаты торговли</h1><p class="mt-1 text-sm text-stone-500">Ежедневная статистика роботов и торговых счетов</p></header>
         <section class="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-2xl bg-green-950 p-5 text-white"><p class="text-xs font-bold uppercase tracking-wider text-white/60">Результат за месяц</p><p class="mt-2 text-3xl font-extrabold">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article>
-            <article class="stat-card"><p class="stat-label">Доходность</p><p class="stat-value {{ $monthPercent >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ number_format($monthPercent, 2, ',', ' ') }}%</p></article>
-            <article class="stat-card"><p class="stat-label">Среднее за день</p><p class="stat-value">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
-            <article class="stat-card"><p class="stat-label">Депозит</p><p class="stat-value">{{ number_format($deposit, 2, ',', ' ') }}</p></article>
+            <article class="rounded-2xl bg-green-950 p-5 text-white"><p class="text-xs font-bold uppercase tracking-wider text-white/60">Итого за месяц</p><p class="mt-2 text-3xl font-extrabold">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article>
+            <article class="stat-card"><p class="stat-label">% за месяц</p><p class="stat-value {{ $monthPercent >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ number_format($monthPercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">% за день</p><p class="stat-value {{ $dayPercent >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">Среднее в день</p><p class="stat-value">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
         </section>
         <section class="grid gap-6 lg:grid-cols-[1fr_340px]">
             <livewire:result-calendar :read-only="true" />

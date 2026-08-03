@@ -30,6 +30,7 @@ class DashboardController extends Controller
             'deposit' => $deposit,
             'monthProfit' => $monthProfit,
             'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
+            'dayPercent' => $deposit > 0 && $activeDays > 0 ? ($monthProfit / $activeDays) / $deposit * 100 : 0,
             'dailyAverage' => $activeDays > 0 ? $monthProfit / $activeDays : 0,
             'recentResults' => TradingResult::query()->withinTrackingPeriod()->with('account.robot')->latest('traded_at')->latest('sequence')->limit(8)->get(),
         ]);
