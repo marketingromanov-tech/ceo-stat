@@ -9,6 +9,7 @@
     @livewireStyles
 </head>
 <body class="min-h-screen bg-stone-50 text-stone-900 antialiased">
+    @auth
     <div class="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
         <header class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
@@ -25,6 +26,7 @@
             </nav>
         </header>
     </div>
+    @endauth
     {{ $slot }}
     @livewireScripts
 </body>
