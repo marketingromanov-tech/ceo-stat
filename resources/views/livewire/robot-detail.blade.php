@@ -1,6 +1,11 @@
 <main class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3"><div><a href="{{ route('robots.index') }}" class="text-sm font-bold text-green-900">← Все роботы</a><h1 class="mt-2 text-2xl font-extrabold">{{ $robot->name }}</h1><p class="mt-1 text-sm text-stone-500">{{ $robot->description ?: 'Учет показателей торгового робота' }}</p></div><span class="rounded-full px-3 py-1.5 text-xs font-bold {{ $robot->is_active ? 'bg-green-100 text-green-900' : 'bg-stone-200 text-stone-600' }}">{{ $robot->is_active ? 'Активен' : 'Отключён' }}</span></div>
-    <section class="mb-6 grid gap-4 sm:grid-cols-3"><article class="rounded-2xl bg-green-950 p-5 text-white"><p class="stat-label text-white/60">Результат за месяц</p><p class="stat-value">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article><article class="stat-card"><p class="stat-label">Торговых дней</p><p class="stat-value">{{ $activeDays }}</p></article><article class="stat-card"><p class="stat-label">Текущий баланс</p><p class="stat-value">{{ number_format((float)($robot->account?->current_balance ?? 0), 2, ',', ' ') }}</p></article></section>
+    <section class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="rounded-2xl bg-green-950 p-5 text-white"><p class="stat-label text-white/60">Итого за месяц</p><p class="stat-value">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article>
+        <article class="stat-card"><p class="stat-label">% за месяц</p><p class="stat-value">{{ number_format($monthPercent, 3, ',', ' ') }}%</p></article>
+        <article class="stat-card"><p class="stat-label">% за день</p><p class="stat-value">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
+        <article class="stat-card"><p class="stat-label">Среднее в день</p><p class="stat-value">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
+    </section>
     <div class="grid gap-6 xl:grid-cols-[1fr_340px]">
         <livewire:result-calendar :robot-id="$robot->id" :key="'calendar-'.$robot->id" />
         @if(in_array(auth()->user()->role->value, ['admin', 'operator'], true))<form wire:submit="saveAccount" class="h-fit rounded-2xl border border-stone-200 bg-white p-5"><h2 class="mb-4 font-extrabold">Торговый счёт</h2>@if(session('account-status'))<p class="mb-4 rounded-xl bg-green-100 p-3 text-sm font-bold text-green-900">{{ session('account-status') }}</p>@endif

@@ -41,12 +41,14 @@ class ResultCalendar extends Component
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->subMonth()->format('Y-m');
         $this->resetEditor();
+        $this->notifyPeriodChanged();
     }
 
     public function nextMonth(): void
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->addMonth()->format('Y-m');
         $this->resetEditor();
+        $this->notifyPeriodChanged();
     }
 
     public function selectDate(string $date): void
@@ -58,6 +60,7 @@ class ResultCalendar extends Component
         $this->selectedDate = $date;
         $this->reset('editingResultId', 'amount', 'comment');
         $this->resetValidation();
+        $this->notifyPeriodChanged();
     }
 
     public function editResult(int $id): void
@@ -98,6 +101,7 @@ class ResultCalendar extends Component
         $this->trackingStartedAt ??= $result->account->robot->fresh()->tracking_started_at?->format('Y-m-d');
         $this->reset('editingResultId', 'amount', 'comment');
         session()->flash('calendar-status', 'Операция сохранена.');
+        $this->notifyPeriodChanged();
     }
 
     public function deleteResult(int $id): void
@@ -111,6 +115,7 @@ class ResultCalendar extends Component
         $this->audit('result.deleted', $result, null, $old, $id);
         $this->reset('editingResultId', 'amount', 'comment');
         session()->flash('calendar-status', 'Операция удалена.');
+        $this->notifyPeriodChanged();
     }
 
     private function resetEditor(): void
@@ -169,5 +174,10 @@ class ResultCalendar extends Component
     private function dateIsLocked(string $date): bool
     {
         return $this->trackingStartedAt !== null && $date < $this->trackingStartedAt;
+    }
+
+    private function notifyPeriodChanged(): void
+    {
+        $this->dispatch('calendar-period-changed', month: $this->month, selectedDate: $this->selectedDate);
     }
 }
