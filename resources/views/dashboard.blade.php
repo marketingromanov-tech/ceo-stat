@@ -13,6 +13,13 @@
             <article class="stat-card"><p class="stat-label">% за день</p><p class="stat-value {{ $dayPercent >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
             <article class="stat-card"><p class="stat-label">Среднее в день</p><p class="stat-value">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
         </section>
+        <section class="mb-7 grid gap-5 xl:grid-cols-2">
+            <article class="rounded-2xl border border-stone-200 bg-white p-5"><div class="mb-4"><h2 class="font-extrabold">Динамика по дням</h2><p class="text-sm text-stone-500">Общий результат за выбранный месяц</p></div><div class="h-72"><canvas id="daily-results-chart"></canvas></div></article>
+            <article class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5"><div class="mb-4"><h2 class="font-extrabold">Накопительный результат</h2><p class="text-sm text-stone-500">Изменение итога за всё время</p></div><div class="h-72"><canvas id="cumulative-results-chart"></canvas></div></article>
+            <article class="rounded-2xl border border-stone-200 bg-white p-5"><div class="mb-4"><h2 class="font-extrabold">Сравнение роботов</h2><p class="text-sm text-stone-500">Вклад каждого робота в общий результат</p></div><div class="h-72"><canvas id="robot-results-chart"></canvas></div></article>
+            <article class="rounded-2xl border border-stone-200 bg-white p-5"><div class="mb-4"><h2 class="font-extrabold">Результаты по месяцам</h2><p class="text-sm text-stone-500">Последние 12 месяцев</p></div><div class="h-72"><canvas id="monthly-results-chart"></canvas></div></article>
+        </section>
+        <script id="dashboard-chart-data" type="application/json">@json($chartData)</script>
         <section class="grid gap-6 lg:grid-cols-[1fr_340px]">
             <livewire:result-calendar :read-only="true" />
             <aside class="h-fit rounded-2xl border border-stone-200 bg-white p-5"><h2 class="mb-4 font-extrabold">Последние записи</h2><div class="max-h-[36rem] space-y-3 overflow-y-auto pr-2">@forelse($recentResults as $result)<div class="flex items-center justify-between rounded-xl bg-stone-50 p-3"><div><p class="text-sm font-bold">{{ $result->account->robot->name }}</p><p class="text-xs text-stone-500">{{ $result->traded_at->format('d.m.Y') }}</p></div><span class="font-extrabold {{ $result->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $result->amount >= 0 ? '+' : '' }}{{ number_format($result->amount, 2, ',', ' ') }}</span></div>@empty<p class="rounded-xl bg-stone-50 p-4 text-sm text-stone-500">Записей пока нет.</p>@endforelse</div></aside>
