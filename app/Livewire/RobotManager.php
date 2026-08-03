@@ -50,7 +50,7 @@ class RobotManager extends Component
 
     public function confirmDelete(int $id): void
     {
-        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+        abort_unless(auth()->user()->role->value === 'admin', 403);
 
         Robot::query()->findOrFail($id);
         $this->deletingId = $id;
@@ -66,7 +66,7 @@ class RobotManager extends Component
 
     public function delete(): void
     {
-        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+        abort_unless(auth()->user()->role->value === 'admin', 403);
 
         $this->validate([
             'deletingId' => ['required', 'integer', 'exists:robots,id'],
