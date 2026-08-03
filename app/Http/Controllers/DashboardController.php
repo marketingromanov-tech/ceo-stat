@@ -5,14 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Robot;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $monthStart = now()->startOfMonth();
-        $monthEnd = now()->endOfMonth();
+        $requestedMonth = $request->query('month');
+        $month = is_string($requestedMonth) && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $requestedMonth)
+            ? $requestedMonth
+            : now()->format('Y-m');
+        $monthStart = CarbonImmutable::createFromFormat('Y-m', $month)->startOfMonth();
+        $monthEnd = $monthStart->endOfMonth();
         $monthResults = TradingResult::query()->withinTrackingPeriod()->whereBetween('traded_at', [$monthStart, $monthEnd]);
         $monthProfit = (float) (clone $monthResults)->sum('amount');
         $activeDays = (clone $monthResults)->distinct('traded_at')->count('traded_at');

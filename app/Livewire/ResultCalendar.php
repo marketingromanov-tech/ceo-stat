@@ -26,7 +26,10 @@ class ResultCalendar extends Component
 
     public function mount(?int $robotId = null, bool $readOnly = false): void
     {
-        $this->month = now()->format('Y-m');
+        $requestedMonth = request()->query('month');
+        $this->month = $readOnly && is_string($requestedMonth) && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $requestedMonth)
+            ? $requestedMonth
+            : now()->format('Y-m');
         $this->robotId = $robotId;
         $this->readOnly = $readOnly;
         $this->accountId = $robotId
@@ -37,18 +40,32 @@ class ResultCalendar extends Component
             : null;
     }
 
-    public function previousMonth(): void
+    public function previousMonth(): mixed
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->subMonth()->format('Y-m');
         $this->resetEditor();
+
+        if ($this->readOnly) {
+            return redirect()->route('dashboard', ['month' => $this->month]);
+        }
+
         $this->notifyPeriodChanged();
+
+        return null;
     }
 
-    public function nextMonth(): void
+    public function nextMonth(): mixed
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->addMonth()->format('Y-m');
         $this->resetEditor();
+
+        if ($this->readOnly) {
+            return redirect()->route('dashboard', ['month' => $this->month]);
+        }
+
         $this->notifyPeriodChanged();
+
+        return null;
     }
 
     public function selectDate(string $date): void
