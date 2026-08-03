@@ -11,7 +11,7 @@ class TradingResult extends Model
     use HasFactory;
 
     protected $fillable = [
-        'trading_account_id', 'created_by', 'traded_at', 'amount',
+        'trading_account_id', 'created_by', 'traded_at', 'sequence', 'amount',
         'source', 'external_id', 'comment', 'metadata',
     ];
 

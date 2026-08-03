@@ -17,6 +17,7 @@ class ResultCalendar extends Component
     public bool $readOnly = false;
     public ?int $accountId = null;
     public ?string $selectedDate = null;
+    public ?int $editingResultId = null;
     public string $amount = '';
     public string $comment = '';
 
@@ -49,15 +50,17 @@ class ResultCalendar extends Component
         }
 
         $this->selectedDate = $date;
-        $result = TradingResult::query()
-            ->where('trading_account_id', $this->accountId)
-            ->whereDate('traded_at', $date)
-            ->where('source', 'manual')
-            ->first();
-
-        $this->amount = $result ? (string) $result->amount : '';
-        $this->comment = $result?->comment ?? '';
+        $this->reset('editingResultId', 'amount', 'comment');
         $this->resetValidation();
+    }
+
+    public function editResult(int $id): void
+    {
+        abort_if($this->readOnly, 403);
+        $result = $this->dayResultsQuery()->findOrFail($id);
+        $this->editingResultId = $result->id;
+        $this->amount = (string) $result->amount;
+        $this->comment = $result->comment ?? '';
     }
 
     public function save(): void
@@ -71,40 +74,41 @@ class ResultCalendar extends Component
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $result = TradingResult::query()->updateOrCreate([
-            'trading_account_id' => $validated['accountId'],
-            'traded_at' => $validated['selectedDate'],
-            'source' => 'manual',
-        ], [
+        $result = $this->editingResultId
+            ? $this->dayResultsQuery()->findOrFail($this->editingResultId)
+            : new TradingResult([
+                'trading_account_id' => $validated['accountId'],
+                'traded_at' => $validated['selectedDate'],
+                'source' => 'manual',
+                'sequence' => ((int) $this->dayResultsQuery()->max('sequence')) + 1,
+            ]);
+        $result->fill([
             'amount' => $validated['amount'],
             'comment' => $validated['comment'] ?: null,
             'created_by' => auth()->id(),
-        ]);
+        ])->save();
 
         $this->audit('result.saved', $result, $result->getChanges());
-        session()->flash('calendar-status', 'Результат сохранён.');
+        $this->reset('editingResultId', 'amount', 'comment');
+        session()->flash('calendar-status', 'Операция сохранена.');
     }
 
-    public function delete(): void
+    public function deleteResult(int $id): void
     {
         abort_unless(! $this->readOnly && in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
 
-        $result = TradingResult::query()
-            ->where('trading_account_id', $this->accountId)
-            ->whereDate('traded_at', $this->selectedDate)
-            ->where('source', 'manual')
-            ->firstOrFail();
+        $result = $this->dayResultsQuery()->findOrFail($id);
         $old = $result->toArray();
         $id = $result->id;
         $result->delete();
         $this->audit('result.deleted', $result, null, $old, $id);
-        $this->resetEditor();
-        session()->flash('calendar-status', 'Результат удалён.');
+        $this->reset('editingResultId', 'amount', 'comment');
+        session()->flash('calendar-status', 'Операция удалена.');
     }
 
     private function resetEditor(): void
     {
-        $this->reset('selectedDate', 'amount', 'comment');
+        $this->reset('selectedDate', 'editingResultId', 'amount', 'comment');
         $this->resetValidation();
     }
 
@@ -122,27 +126,34 @@ class ResultCalendar extends Component
     {
         $start = CarbonImmutable::createFromFormat('Y-m', $this->month)->startOfMonth();
         $end = $start->endOfMonth();
-        $results = $this->readOnly
-            ? $this->summaryResults($start, $end)
-            : ($this->accountId
-                ? TradingResult::query()->where('trading_account_id', $this->accountId)->whereBetween('traded_at', [$start, $end])->get()->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'))
-                : collect());
+        $results = $this->summaryResults($start, $end, $this->readOnly ? null : $this->accountId);
         $days = collect(range(1, $start->daysInMonth))->map(fn (int $day) => $start->setDay($day));
 
         return view('livewire.result-calendar', [
             'account' => $this->accountId ? TradingAccount::query()->with('robot')->find($this->accountId) : null,
             'days' => $days, 'results' => $results, 'monthLabel' => $start->translatedFormat('F Y'),
             'leadingBlanks' => $start->isoWeekday() - 1,
+            'dayResults' => $this->selectedDate && $this->accountId ? $this->dayResultsQuery()->get() : collect(),
         ]);
     }
 
-    private function summaryResults(CarbonImmutable $start, CarbonImmutable $end): Collection
+    private function summaryResults(CarbonImmutable $start, CarbonImmutable $end, ?int $accountId): Collection
     {
         return TradingResult::query()
+            ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId))
             ->whereBetween('traded_at', [$start, $end])
             ->selectRaw('traded_at, SUM(amount) as amount')
             ->groupBy('traded_at')
             ->get()
             ->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'));
+    }
+
+    private function dayResultsQuery()
+    {
+        return TradingResult::query()
+            ->where('trading_account_id', $this->accountId)
+            ->whereDate('traded_at', $this->selectedDate)
+            ->where('source', 'manual')
+            ->orderBy('sequence');
     }
 }
