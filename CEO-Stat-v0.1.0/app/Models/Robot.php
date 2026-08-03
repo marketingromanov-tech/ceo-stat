@@ -4,21 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Robot extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'is_active'];
+    protected $fillable = ['name', 'description', 'tracking_started_at', 'is_active'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['tracking_started_at' => 'date', 'is_active' => 'boolean'];
     }
 
-    public function accounts(): HasMany
+    public function account(): HasOne
     {
-        return $this->hasMany(TradingAccount::class);
+        return $this->hasOne(TradingAccount::class);
     }
 }
