@@ -13,6 +13,8 @@ class RobotManager extends Component
     public string $name = '';
     public string $description = '';
     public bool $isActive = true;
+    public ?int $deletingId = null;
+    public string $deletePassword = '';
 
     public function edit(int $id): void
     {
@@ -46,11 +48,35 @@ class RobotManager extends Component
         $this->audit('robot.status_changed', $robot, $old);
     }
 
-    public function delete(int $id): void
+    public function confirmDelete(int $id): void
     {
         abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
 
-        $robot = Robot::query()->with('account')->findOrFail($id);
+        Robot::query()->findOrFail($id);
+        $this->deletingId = $id;
+        $this->deletePassword = '';
+        $this->resetValidation('deletePassword');
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->reset('deletingId', 'deletePassword');
+        $this->resetValidation('deletePassword');
+    }
+
+    public function delete(): void
+    {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+
+        $this->validate([
+            'deletingId' => ['required', 'integer', 'exists:robots,id'],
+            'deletePassword' => ['required', 'current_password'],
+        ], [
+            'deletePassword.required' => 'Введите пароль.',
+            'deletePassword.current_password' => 'Неверный пароль.',
+        ]);
+
+        $robot = Robot::query()->with('account')->findOrFail($this->deletingId);
         $old = $robot->toArray();
         $old['account'] = $robot->account?->toArray();
         $old['results_count'] = $robot->account?->results()->count() ?? 0;
@@ -58,10 +84,11 @@ class RobotManager extends Component
         $this->audit('robot.deleted', $robot, $old);
         $robot->delete();
 
-        if ($this->editingId === $id) {
+        if ($this->editingId === $robot->id) {
             $this->cancel();
         }
 
+        $this->cancelDelete();
         session()->flash('status', 'Робот, его счёт и вся история удалены.');
     }
 
