@@ -41,6 +41,20 @@ class ResultCalendarTest extends TestCase
         $this->assertEqualsWithDelta(76.67, TradingResult::query()->where('trading_account_id', $account->id)->sum('amount'), 0.001);
     }
 
+    public function test_operator_can_enter_decimal_amount_with_comma(): void
+    {
+        $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
+        $account = TradingAccount::query()->create(['robot_id' => Robot::query()->create(['name' => 'Alpha'])->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000, 'current_balance' => 1000]);
+
+        Livewire::actingAs($operator)->test(ResultCalendar::class, ['robotId' => $account->robot_id])
+            ->call('selectDate', '2026-08-03')
+            ->set('amount', '-9,03')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'traded_at' => '2026-08-03', 'amount' => -9.03]);
+    }
+
     public function test_days_before_robot_tracking_start_are_locked(): void
     {
         $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);

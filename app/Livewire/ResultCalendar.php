@@ -76,11 +76,17 @@ class ResultCalendar extends Component
     {
         abort_unless(! $this->readOnly && in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
 
+        $this->amount = str_replace(["\u{00A0}", ' ', ','], ['', '', '.'], trim($this->amount));
+
         $validated = $this->validate([
             'accountId' => ['required', 'integer', 'exists:trading_accounts,id'],
             'selectedDate' => ['required', 'date', Rule::when($this->trackingStartedAt, ['after_or_equal:'.$this->trackingStartedAt])],
             'amount' => ['required', 'numeric', 'between:-9999999999999999.99,9999999999999999.99'],
             'comment' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'amount.required' => 'Укажите сумму.',
+            'amount.numeric' => 'Введите сумму числом, например -9,03.',
+            'amount.between' => 'Сумма выходит за допустимый диапазон.',
         ]);
 
         $result = $this->editingResultId
