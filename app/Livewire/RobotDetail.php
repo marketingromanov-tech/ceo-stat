@@ -52,6 +52,7 @@ class RobotDetail extends Component
     {
         $accountId = $this->robot->account?->id;
         $results = TradingResult::query()
+            ->withinTrackingPeriod()
             ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId), fn ($query) => $query->whereRaw('1 = 0'))
             ->whereBetween('traded_at', [now()->startOfMonth(), now()->endOfMonth()]);
         return view('livewire.robot-detail', [

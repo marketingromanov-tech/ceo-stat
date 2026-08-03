@@ -10,11 +10,11 @@ class Robot extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'is_active'];
+    protected $fillable = ['name', 'description', 'tracking_started_at', 'is_active'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['tracking_started_at' => 'date', 'is_active' => 'boolean'];
     }
 
     public function account(): HasOne

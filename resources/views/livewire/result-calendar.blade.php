@@ -13,9 +13,11 @@
         @for($i = 0; $i < $leadingBlanks; $i++)<div></div>@endfor
         @foreach($days as $day)
             @php($result = $results->get($day->format('Y-m-d')))
-            <button wire:click="selectDate('{{ $day->format('Y-m-d') }}')" @disabled(!$readOnly && !$accountId)
-                class="relative min-h-16 rounded-xl border p-1.5 text-left transition sm:min-h-20 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-900 ring-2 ring-green-900/15' : 'border-stone-200 hover:border-stone-400' }} {{ $day->isToday() ? 'bg-amber-50' : 'bg-white' }}">
-                <span class="text-xs font-extrabold text-stone-700">{{ $day->day }}</span>
+            @php($isLocked = !$readOnly && $trackingStartedAt && $day->format('Y-m-d') < $trackingStartedAt)
+            <button wire:click="selectDate('{{ $day->format('Y-m-d') }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
+                class="relative min-h-16 rounded-xl border p-1.5 text-left transition sm:min-h-20 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-900 ring-2 ring-green-900/15' : 'border-stone-200' }} {{ $isLocked ? 'cursor-not-allowed bg-stone-100 opacity-60' : ($day->isToday() ? 'bg-amber-50 hover:border-stone-400' : 'bg-white hover:border-stone-400') }}">
+                <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
+                @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
                 @if($result)<span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 0, ',', ' ') }}</span>@endif
             </button>
         @endforeach

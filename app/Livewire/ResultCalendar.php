@@ -3,11 +3,13 @@
 namespace App\Livewire;
 
 use App\Models\AuditLog;
+use App\Models\Robot;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class ResultCalendar extends Component
@@ -16,6 +18,7 @@ class ResultCalendar extends Component
     public ?int $robotId = null;
     public bool $readOnly = false;
     public ?int $accountId = null;
+    public ?string $trackingStartedAt = null;
     public ?string $selectedDate = null;
     public ?int $editingResultId = null;
     public string $amount = '';
@@ -28,6 +31,9 @@ class ResultCalendar extends Component
         $this->readOnly = $readOnly;
         $this->accountId = $robotId
             ? TradingAccount::query()->where('robot_id', $robotId)->value('id')
+            : null;
+        $this->trackingStartedAt = $robotId
+            ? Robot::query()->whereKey($robotId)->value('tracking_started_at')
             : null;
     }
 
@@ -45,7 +51,7 @@ class ResultCalendar extends Component
 
     public function selectDate(string $date): void
     {
-        if ($this->readOnly || ! $this->accountId) {
+        if ($this->readOnly || ! $this->accountId || $this->dateIsLocked($date)) {
             return;
         }
 
@@ -69,7 +75,7 @@ class ResultCalendar extends Component
 
         $validated = $this->validate([
             'accountId' => ['required', 'integer', 'exists:trading_accounts,id'],
-            'selectedDate' => ['required', 'date'],
+            'selectedDate' => ['required', 'date', Rule::when($this->trackingStartedAt, ['after_or_equal:'.$this->trackingStartedAt])],
             'amount' => ['required', 'numeric', 'between:-9999999999999999.99,9999999999999999.99'],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -89,6 +95,7 @@ class ResultCalendar extends Component
         ])->save();
 
         $this->audit('result.saved', $result, $result->getChanges());
+        $this->trackingStartedAt ??= $result->account->robot->fresh()->tracking_started_at?->format('Y-m-d');
         $this->reset('editingResultId', 'amount', 'comment');
         session()->flash('calendar-status', 'Операция сохранена.');
     }
@@ -133,6 +140,7 @@ class ResultCalendar extends Component
             'account' => $this->accountId ? TradingAccount::query()->with('robot')->find($this->accountId) : null,
             'days' => $days, 'results' => $results, 'monthLabel' => $start->translatedFormat('F Y'),
             'leadingBlanks' => $start->isoWeekday() - 1,
+            'trackingStartedAt' => $this->trackingStartedAt,
             'dayResults' => $this->selectedDate && $this->accountId ? $this->dayResultsQuery()->get() : collect(),
         ]);
     }
@@ -140,6 +148,7 @@ class ResultCalendar extends Component
     private function summaryResults(CarbonImmutable $start, CarbonImmutable $end, ?int $accountId): Collection
     {
         return TradingResult::query()
+            ->withinTrackingPeriod()
             ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId))
             ->whereBetween('traded_at', [$start, $end])
             ->selectRaw('traded_at, SUM(amount) as amount')
@@ -155,5 +164,10 @@ class ResultCalendar extends Component
             ->whereDate('traded_at', $this->selectedDate)
             ->where('source', 'manual')
             ->orderBy('sequence');
+    }
+
+    private function dateIsLocked(string $date): bool
+    {
+        return $this->trackingStartedAt !== null && $date < $this->trackingStartedAt;
     }
 }

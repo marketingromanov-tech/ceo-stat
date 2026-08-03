@@ -13,7 +13,7 @@ class DashboardController extends Controller
     {
         $monthStart = now()->startOfMonth();
         $monthEnd = now()->endOfMonth();
-        $monthResults = TradingResult::query()->whereBetween('traded_at', [$monthStart, $monthEnd]);
+        $monthResults = TradingResult::query()->withinTrackingPeriod()->whereBetween('traded_at', [$monthStart, $monthEnd]);
         $monthProfit = (float) (clone $monthResults)->sum('amount');
         $activeDays = (clone $monthResults)->distinct('traded_at')->count('traded_at');
         $deposit = (float) TradingAccount::query()->where('is_active', true)->sum('initial_deposit');
@@ -25,7 +25,7 @@ class DashboardController extends Controller
             'monthProfit' => $monthProfit,
             'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
             'dailyAverage' => $activeDays > 0 ? $monthProfit / $activeDays : 0,
-            'recentResults' => TradingResult::query()->with('account.robot')->latest('traded_at')->limit(8)->get(),
+            'recentResults' => TradingResult::query()->withinTrackingPeriod()->with('account.robot')->latest('traded_at')->latest('sequence')->limit(8)->get(),
         ]);
     }
 }
