@@ -39,7 +39,7 @@ class DashboardController extends Controller
             'allTimePercent' => $deposit > 0 ? $allTimeProfit / $deposit * 100 : 0,
             'allTimeDayPercent' => $deposit > 0 && $allTimeDays > 0 ? ($allTimeProfit / $allTimeDays) / $deposit * 100 : 0,
             'allTimeDailyAverage' => $allTimeDays > 0 ? $allTimeProfit / $allTimeDays : 0,
-            'recentResults' => TradingResult::query()->withinTrackingPeriod()->with('account.robot')->latest('traded_at')->latest('sequence')->limit(8)->get(),
+            'recentResults' => TradingResult::query()->withinTrackingPeriod()->with('account.robot')->latest('created_at')->latest('id')->limit(8)->get(),
         ]);
     }
 }
