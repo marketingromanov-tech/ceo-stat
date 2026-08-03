@@ -93,4 +93,21 @@ class ResultCalendarTest extends TestCase
 
         $this->assertEqualsWithDelta(25, TradingResult::query()->withinTrackingPeriod()->sum('amount'), 0.001);
     }
+
+    public function test_global_calendar_contains_per_robot_day_breakdown(): void
+    {
+        $viewer = User::factory()->create(['role' => UserRole::Viewer, 'is_active' => true]);
+        $alpha = Robot::query()->create(['name' => 'Alpha']);
+        $beta = Robot::query()->create(['name' => 'Beta']);
+        $alphaAccount = TradingAccount::query()->create(['robot_id' => $alpha->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000, 'current_balance' => 1100]);
+        $betaAccount = TradingAccount::query()->create(['robot_id' => $beta->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000, 'current_balance' => 950]);
+        TradingResult::query()->create(['trading_account_id' => $alphaAccount->id, 'traded_at' => now()->format('Y-m-d'), 'sequence' => 1, 'amount' => 100, 'source' => 'manual']);
+        TradingResult::query()->create(['trading_account_id' => $betaAccount->id, 'traded_at' => now()->format('Y-m-d'), 'sequence' => 1, 'amount' => -50, 'source' => 'manual']);
+
+        Livewire::actingAs($viewer)->test(ResultCalendar::class, ['readOnly' => true])
+            ->assertSee('Alpha')
+            ->assertSee('Beta')
+            ->assertSee('+100,00')
+            ->assertSee('-50,00');
+    }
 }

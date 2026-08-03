@@ -162,6 +162,7 @@ class ResultCalendar extends Component
         $start = CarbonImmutable::createFromFormat('Y-m', $this->month)->startOfMonth();
         $end = $start->endOfMonth();
         $results = $this->summaryResults($start, $end, $this->readOnly ? null : $this->accountId);
+        $robotBreakdown = $this->readOnly ? $this->robotBreakdown($start, $end) : collect();
         $days = collect(range(1, $start->daysInMonth))->map(fn (int $day) => $start->setDay($day));
 
         return view('livewire.result-calendar', [
@@ -169,6 +170,7 @@ class ResultCalendar extends Component
             'days' => $days, 'results' => $results, 'monthLabel' => $start->translatedFormat('F Y'),
             'leadingBlanks' => $start->isoWeekday() - 1,
             'trackingStartedAt' => $this->trackingStartedAt,
+            'robotBreakdown' => $robotBreakdown,
             'dayResults' => $this->selectedDate && $this->accountId ? $this->dayResultsQuery()->get() : collect(),
         ]);
     }
@@ -192,6 +194,20 @@ class ResultCalendar extends Component
             ->whereDate('traded_at', $this->selectedDate)
             ->where('source', 'manual')
             ->orderBy('sequence');
+    }
+
+    private function robotBreakdown(CarbonImmutable $start, CarbonImmutable $end): Collection
+    {
+        return TradingResult::query()
+            ->withinTrackingPeriod()
+            ->join('trading_accounts', 'trading_accounts.id', '=', 'trading_results.trading_account_id')
+            ->join('robots', 'robots.id', '=', 'trading_accounts.robot_id')
+            ->whereBetween('trading_results.traded_at', [$start, $end])
+            ->selectRaw('trading_results.traded_at, robots.id as robot_id, robots.name as robot_name, SUM(trading_results.amount) as amount')
+            ->groupBy('trading_results.traded_at', 'robots.id', 'robots.name')
+            ->orderBy('robots.name')
+            ->get()
+            ->groupBy(fn ($item) => CarbonImmutable::parse($item->traded_at)->format('Y-m-d'));
     }
 
     private function dateIsLocked(string $date): bool
