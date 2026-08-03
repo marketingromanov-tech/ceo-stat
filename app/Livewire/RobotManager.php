@@ -60,6 +60,6 @@ class RobotManager extends Component
 
     public function render(): View
     {
-        return view('livewire.robot-manager', ['robots' => Robot::query()->withCount('accounts')->latest()->get()])->layout('components.layouts.app', ['title' => 'Роботы — CEO Stat']);
+        return view('livewire.robot-manager', ['robots' => Robot::query()->with('account')->latest()->get()])->layout('components.layouts.app', ['title' => 'Роботы — CEO Stat']);
     }
 }

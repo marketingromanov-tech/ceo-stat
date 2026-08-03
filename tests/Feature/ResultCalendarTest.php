@@ -21,8 +21,8 @@ class ResultCalendarTest extends TestCase
         $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
         $account = TradingAccount::query()->create(['robot_id' => Robot::query()->create(['name' => 'Alpha'])->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000, 'current_balance' => 1000]);
 
-        Livewire::actingAs($operator)->test(ResultCalendar::class)
-            ->set('accountId', $account->id)->call('selectDate', '2026-08-03')
+        Livewire::actingAs($operator)->test(ResultCalendar::class, ['robotId' => $account->robot_id])
+            ->call('selectDate', '2026-08-03')
             ->set('amount', '125.50')->set('comment', 'Ручной результат')->call('save')->assertHasNoErrors();
 
         $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'traded_at' => '2026-08-03', 'amount' => 125.50, 'source' => 'manual']);

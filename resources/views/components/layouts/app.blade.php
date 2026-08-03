@@ -20,7 +20,6 @@
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}" href="{{ route('dashboard') }}">Календарь</a>
                 @if (in_array(auth()->user()->role->value, ['admin', 'operator'], true))
                     <a class="nav-link {{ request()->routeIs('robots.*') ? 'nav-link-active' : '' }}" href="{{ route('robots.index') }}">Роботы</a>
-                    <a class="nav-link {{ request()->routeIs('accounts.*') ? 'nav-link-active' : '' }}" href="{{ route('accounts.index') }}">Счета</a>
                 @endif
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="nav-link">Выйти</button></form>
             </nav>

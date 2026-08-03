@@ -16,7 +16,6 @@ class ManagementAccessTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::Admin, 'is_active' => true]);
 
         $this->actingAs($admin)->get('/robots')->assertOk();
-        $this->actingAs($admin)->get('/accounts')->assertOk();
     }
 
     public function test_viewer_cannot_open_management_pages(): void
@@ -24,6 +23,5 @@ class ManagementAccessTest extends TestCase
         $viewer = User::factory()->create(['role' => UserRole::Viewer, 'is_active' => true]);
 
         $this->actingAs($viewer)->get('/robots')->assertForbidden();
-        $this->actingAs($viewer)->get('/accounts')->assertForbidden();
     }
 }

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Robot extends Model
 {
@@ -17,8 +17,8 @@ class Robot extends Model
         return ['is_active' => 'boolean'];
     }
 
-    public function accounts(): HasMany
+    public function account(): HasOne
     {
-        return $this->hasMany(TradingAccount::class);
+        return $this->hasOne(TradingAccount::class);
     }
 }

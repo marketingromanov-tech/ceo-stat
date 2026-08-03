@@ -7,20 +7,27 @@ use App\Models\TradingAccount;
 use App\Models\TradingResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 
 class ResultCalendar extends Component
 {
     public string $month;
+    public ?int $robotId = null;
+    public bool $readOnly = false;
     public ?int $accountId = null;
     public ?string $selectedDate = null;
     public string $amount = '';
     public string $comment = '';
 
-    public function mount(): void
+    public function mount(?int $robotId = null, bool $readOnly = false): void
     {
         $this->month = now()->format('Y-m');
-        $this->accountId = TradingAccount::query()->where('is_active', true)->value('id');
+        $this->robotId = $robotId;
+        $this->readOnly = $readOnly;
+        $this->accountId = $robotId
+            ? TradingAccount::query()->where('robot_id', $robotId)->value('id')
+            : null;
     }
 
     public function previousMonth(): void
@@ -35,13 +42,12 @@ class ResultCalendar extends Component
         $this->resetEditor();
     }
 
-    public function updatedAccountId(): void
-    {
-        $this->resetEditor();
-    }
-
     public function selectDate(string $date): void
     {
+        if ($this->readOnly || ! $this->accountId) {
+            return;
+        }
+
         $this->selectedDate = $date;
         $result = TradingResult::query()
             ->where('trading_account_id', $this->accountId)
@@ -56,7 +62,7 @@ class ResultCalendar extends Component
 
     public function save(): void
     {
-        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+        abort_unless(! $this->readOnly && in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
 
         $validated = $this->validate([
             'accountId' => ['required', 'integer', 'exists:trading_accounts,id'],
@@ -81,7 +87,7 @@ class ResultCalendar extends Component
 
     public function delete(): void
     {
-        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+        abort_unless(! $this->readOnly && in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
 
         $result = TradingResult::query()
             ->where('trading_account_id', $this->accountId)
@@ -116,15 +122,27 @@ class ResultCalendar extends Component
     {
         $start = CarbonImmutable::createFromFormat('Y-m', $this->month)->startOfMonth();
         $end = $start->endOfMonth();
-        $results = $this->accountId
-            ? TradingResult::query()->where('trading_account_id', $this->accountId)->whereBetween('traded_at', [$start, $end])->get()->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'))
-            : collect();
+        $results = $this->readOnly
+            ? $this->summaryResults($start, $end)
+            : ($this->accountId
+                ? TradingResult::query()->where('trading_account_id', $this->accountId)->whereBetween('traded_at', [$start, $end])->get()->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'))
+                : collect());
         $days = collect(range(1, $start->daysInMonth))->map(fn (int $day) => $start->setDay($day));
 
         return view('livewire.result-calendar', [
-            'accounts' => TradingAccount::query()->with('robot')->where('is_active', true)->orderBy('name')->get(),
+            'account' => $this->accountId ? TradingAccount::query()->with('robot')->find($this->accountId) : null,
             'days' => $days, 'results' => $results, 'monthLabel' => $start->translatedFormat('F Y'),
             'leadingBlanks' => $start->isoWeekday() - 1,
         ]);
+    }
+
+    private function summaryResults(CarbonImmutable $start, CarbonImmutable $end): Collection
+    {
+        return TradingResult::query()
+            ->whereBetween('traded_at', [$start, $end])
+            ->selectRaw('traded_at, SUM(amount) as amount')
+            ->groupBy('traded_at')
+            ->get()
+            ->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'));
     }
 }
