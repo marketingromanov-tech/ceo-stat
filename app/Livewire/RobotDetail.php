@@ -72,14 +72,10 @@ class RobotDetail extends Component
         $monthProfit = (float) (clone $results)->sum('amount');
         $accountedDays = (clone $results)->distinct('traded_at')->count('traded_at');
         $deposit = (float) ($this->robot->account?->initial_deposit ?? 0);
-        $dayResult = $this->selectedDate
-            ? (float) (clone $results)->whereDate('traded_at', $this->selectedDate)->sum('amount')
-            : 0;
-
         return view('livewire.robot-detail', [
             'monthProfit' => $monthProfit,
             'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
-            'dayPercent' => $deposit > 0 ? $dayResult / $deposit * 100 : 0,
+            'dayPercent' => $deposit > 0 && $accountedDays > 0 ? ($monthProfit / $accountedDays) / $deposit * 100 : 0,
             'dailyAverage' => $accountedDays > 0 ? $monthProfit / $accountedDays : 0,
         ])->layout('components.layouts.app', ['title' => $this->robot->name.' — CEO Stat']);
     }

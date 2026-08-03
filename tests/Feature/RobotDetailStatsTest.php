@@ -28,7 +28,7 @@ class RobotDetailStatsTest extends TestCase
             ->call('updateCalendarPeriod', '2026-07', '2026-07-20')
             ->assertSee('150,00')
             ->assertSee('0,750%')
-            ->assertSee('0,500%')
+            ->assertSee('0,375%')
             ->assertSee('75,00');
     }
 }
