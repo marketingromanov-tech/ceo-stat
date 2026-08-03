@@ -33,7 +33,7 @@ class ResultCalendar extends Component
             ? TradingAccount::query()->where('robot_id', $robotId)->value('id')
             : null;
         $this->trackingStartedAt = $robotId
-            ? Robot::query()->whereKey($robotId)->value('tracking_started_at')
+            ? Robot::query()->find($robotId)?->tracking_started_at?->format('Y-m-d')
             : null;
     }
 
