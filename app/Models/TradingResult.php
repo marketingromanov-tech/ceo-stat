@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -55,5 +56,16 @@ class TradingResult extends Model
                     ->orWhereColumn('trading_results.traded_at', '>=', 'robots.tracking_started_at');
             });
         });
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->role !== UserRole::Viewer) {
+            return $query;
+        }
+
+        $robotIds = $user->robots()->pluck('robots.id');
+
+        return $query->whereHas('account', fn (Builder $accountQuery) => $accountQuery->whereIn('robot_id', $robotIds));
     }
 }

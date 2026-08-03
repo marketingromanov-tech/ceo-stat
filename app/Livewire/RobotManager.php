@@ -18,6 +18,7 @@ class RobotManager extends Component
 
     public function edit(int $id): void
     {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
         $robot = Robot::query()->findOrFail($id);
         $this->editingId = $robot->id;
         $this->name = $robot->name;
@@ -27,6 +28,7 @@ class RobotManager extends Component
 
     public function save(): void
     {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -42,6 +44,7 @@ class RobotManager extends Component
 
     public function toggle(int $id): void
     {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
         $robot = Robot::query()->findOrFail($id);
         $old = $robot->toArray();
         $robot->update(['is_active' => ! $robot->is_active]);
@@ -106,6 +109,11 @@ class RobotManager extends Component
 
     public function render(): View
     {
-        return view('livewire.robot-manager', ['robots' => Robot::query()->with('account')->latest()->get()])->layout('components.layouts.app', ['title' => 'Роботы — CEO Stat']);
+        $robots = Robot::query()->with('account')
+            ->when(auth()->user()->role->value === 'viewer', fn ($query) => $query->whereHas('viewers', fn ($viewerQuery) => $viewerQuery->whereKey(auth()->id())))
+            ->latest()
+            ->get();
+
+        return view('livewire.robot-manager', ['robots' => $robots])->layout('components.layouts.app', ['title' => 'Роботы — CEO Stat']);
     }
 }

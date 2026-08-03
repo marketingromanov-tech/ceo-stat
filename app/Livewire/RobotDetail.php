@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\Robot;
 use App\Models\TradingAccount;
@@ -29,6 +30,10 @@ class RobotDetail extends Component
 
     public function mount(Robot $robot): void
     {
+        if (auth()->user()->role === UserRole::Viewer) {
+            abort_unless(auth()->user()->robots()->whereKey($robot->id)->exists(), 403);
+        }
+
         $this->robot = $robot;
         $this->calendarMonth = now()->format('Y-m');
         $account = $robot->account;

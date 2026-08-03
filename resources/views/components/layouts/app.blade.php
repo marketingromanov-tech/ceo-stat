@@ -18,9 +18,8 @@
             </a>
             <nav class="flex flex-wrap items-center gap-2 text-sm font-bold">
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}" href="{{ route('dashboard') }}">Календарь</a>
-                @if (in_array(auth()->user()->role->value, ['admin', 'operator'], true))
-                    <a class="nav-link {{ request()->routeIs('robots.*') ? 'nav-link-active' : '' }}" href="{{ route('robots.index') }}">Роботы</a>
-                @endif
+                <a class="nav-link {{ request()->routeIs('robots.*') ? 'nav-link-active' : '' }}" href="{{ route('robots.index') }}">{{ auth()->user()->role->value === 'viewer' ? 'Мои роботы' : 'Роботы' }}</a>
+                @if (auth()->user()->role->value === 'admin')<a class="nav-link {{ request()->routeIs('users.*') ? 'nav-link-active' : '' }}" href="{{ route('users.index') }}">Пользователи</a>@endif
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="nav-link">Выйти</button></form>
             </nav>
         </header>

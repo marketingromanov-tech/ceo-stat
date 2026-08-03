@@ -26,6 +26,13 @@ class ResultCalendar extends Component
 
     public function mount(?int $robotId = null, bool $readOnly = false): void
     {
+        if (auth()->user()->role->value === 'viewer') {
+            if ($robotId) {
+                abort_unless(auth()->user()->robots()->whereKey($robotId)->exists(), 403);
+            }
+            $readOnly = true;
+        }
+
         $requestedMonth = request()->query('month');
         $this->month = $readOnly && is_string($requestedMonth) && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $requestedMonth)
             ? $requestedMonth
@@ -161,8 +168,8 @@ class ResultCalendar extends Component
     {
         $start = CarbonImmutable::createFromFormat('Y-m', $this->month)->startOfMonth();
         $end = $start->endOfMonth();
-        $results = $this->summaryResults($start, $end, $this->readOnly ? null : $this->accountId);
-        $robotBreakdown = $this->readOnly ? $this->robotBreakdown($start, $end) : collect();
+        $results = $this->summaryResults($start, $end, $this->robotId ? $this->accountId : null);
+        $robotBreakdown = $this->readOnly && ! $this->robotId ? $this->robotBreakdown($start, $end) : collect();
         $days = collect(range(1, $start->daysInMonth))->map(fn (int $day) => $start->setDay($day));
 
         return view('livewire.result-calendar', [
@@ -178,6 +185,7 @@ class ResultCalendar extends Component
     private function summaryResults(CarbonImmutable $start, CarbonImmutable $end, ?int $accountId): Collection
     {
         return TradingResult::query()
+            ->visibleTo(auth()->user())
             ->withinTrackingPeriod()
             ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId))
             ->whereBetween('traded_at', [$start, $end])
@@ -199,6 +207,7 @@ class ResultCalendar extends Component
     private function robotBreakdown(CarbonImmutable $start, CarbonImmutable $end): Collection
     {
         return TradingResult::query()
+            ->visibleTo(auth()->user())
             ->withinTrackingPeriod()
             ->join('trading_accounts', 'trading_accounts.id', '=', 'trading_results.trading_account_id')
             ->join('robots', 'robots.id', '=', 'trading_accounts.robot_id')
