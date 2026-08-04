@@ -79,11 +79,21 @@ class RobotDetail extends Component
         $monthProfit = (float) (clone $results)->sum('amount');
         $accountedDays = (clone $results)->distinct('traded_at')->count('traded_at');
         $deposit = (float) ($this->robot->account?->initial_deposit ?? 0);
+        $allTimeResults = TradingResult::query()
+            ->withinTrackingPeriod()
+            ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId), fn ($query) => $query->whereRaw('1 = 0'));
+        $allTimeProfit = (float) (clone $allTimeResults)->sum('amount');
+        $allTimeDays = (clone $allTimeResults)->distinct('traded_at')->count('traded_at');
+
         return view('livewire.robot-detail', [
             'monthProfit' => $monthProfit,
             'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
             'dayPercent' => $deposit > 0 && $accountedDays > 0 ? ($monthProfit / $accountedDays) / $deposit * 100 : 0,
             'dailyAverage' => $accountedDays > 0 ? $monthProfit / $accountedDays : 0,
+            'allTimeProfit' => $allTimeProfit,
+            'allTimePercent' => $deposit > 0 ? $allTimeProfit / $deposit * 100 : 0,
+            'allTimeDayPercent' => $deposit > 0 && $allTimeDays > 0 ? ($allTimeProfit / $allTimeDays) / $deposit * 100 : 0,
+            'allTimeDailyAverage' => $allTimeDays > 0 ? $allTimeProfit / $allTimeDays : 0,
             'recentResults' => $accountId
                 ? TradingResult::query()
                     ->where('trading_account_id', $accountId)
