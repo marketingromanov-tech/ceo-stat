@@ -50,6 +50,9 @@ class DashboardController extends Controller
         $allTimeResults = TradingResult::query()->visibleTo($request->user())->withinTrackingPeriod();
         $allTimeProfit = (float) (clone $allTimeResults)->sum('amount');
         $allTimeDays = (clone $allTimeResults)->distinct('traded_at')->count('traded_at');
+        $todayResults = TradingResult::query()->visibleTo($request->user())->withinTrackingPeriod()->whereDate('traded_at', today());
+        $todayProfit = (float) (clone $todayResults)->sum('amount');
+        $todayOperations = (clone $todayResults)->count();
         $chartResults = (clone $allTimeResults)->with('account.robot:id,name')->orderBy('traded_at')->orderBy('sequence')->get();
 
         return view('dashboard', [
@@ -65,6 +68,10 @@ class DashboardController extends Controller
             'allTimePercent' => $deposit > 0 ? $allTimeProfit / $deposit * 100 : 0,
             'allTimeDayPercent' => $deposit > 0 && $allTimeDays > 0 ? ($allTimeProfit / $allTimeDays) / $deposit * 100 : 0,
             'allTimeDailyAverage' => $allTimeDays > 0 ? $allTimeProfit / $allTimeDays : 0,
+            'todayProfit' => $todayProfit,
+            'todayPercent' => $deposit > 0 ? $todayProfit / $deposit * 100 : 0,
+            'todayOperations' => $todayOperations,
+            'todayAverage' => $todayOperations > 0 ? $todayProfit / $todayOperations : 0,
             'chartData' => $this->chartData($chartResults, $monthStart),
             'recentResults' => TradingResult::query()->visibleTo($request->user())->withinTrackingPeriod()->with('account.robot')->latest('traded_at')->latest('sequence')->limit(100)->get(),
         ]);
