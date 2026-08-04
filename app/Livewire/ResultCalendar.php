@@ -169,6 +169,14 @@ class ResultCalendar extends Component
         $start = CarbonImmutable::createFromFormat('Y-m', $this->month)->startOfMonth();
         $end = $start->endOfMonth();
         $results = $this->summaryResults($start, $end, $this->robotId ? $this->accountId : null);
+        $deposit = (float) ($this->accountId
+            ? TradingAccount::query()->whereKey($this->accountId)->value('initial_deposit')
+            : 0);
+        $results->each(function ($result) use ($deposit): void {
+            $result->daily_percent = $deposit > 0
+                ? (float) $result->amount / $deposit * 100
+                : null;
+        });
         $robotBreakdown = $this->readOnly && ! $this->robotId ? $this->robotBreakdown($start, $end) : collect();
         $days = collect(range(1, $start->daysInMonth))->map(fn (int $day) => $start->setDay($day));
 
