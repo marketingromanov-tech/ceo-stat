@@ -24,7 +24,7 @@
         <a href="{{ route('dashboard') }}" class="flex flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-bold {{ request()->routeIs('dashboard') ? 'text-[#605bff]' : 'text-[#030229]/45' }}"><span class="grid size-5 grid-cols-2 gap-0.5">@for($i=0;$i<4;$i++)<i class="rounded-[2px] bg-current"></i>@endfor</span>Обзор</a>
         <a href="{{ route('robots.index') }}" class="flex flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-bold {{ request()->routeIs('robots.*') ? 'text-[#605bff]' : 'text-[#030229]/45' }}"><span class="grid size-5 place-items-center rounded-md bg-current/10 text-[10px]">R</span>{{ auth()->user()->role->value === 'viewer' ? 'Мои роботы' : 'Роботы' }}</a>
         @if(auth()->user()->role->value === 'admin')<a href="{{ route('users.index') }}" class="flex flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-bold {{ request()->routeIs('users.*') ? 'text-[#605bff]' : 'text-[#030229]/45' }}"><span class="grid size-5 place-items-center rounded-md bg-current/10 text-[10px]">U</span>Люди</a>@endif
-        <form method="POST" action="{{ route('logout') }}" class="contents">@csrf<button class="flex flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-bold text-[#030229]/45"><span class="grid size-5 place-items-center text-base">↗</span>Выйти</button></form>
+        <form method="POST" action="{{ route('logout') }}" class="contents">@csrf<button class="flex flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-bold text-[#030229]/45"><span class="grid size-5 place-items-center text-base">🚪</span>Дверь</button></form>
     </nav>
     <div class="pb-20 lg:pb-0 lg:pl-[218px]">
     @endauth
