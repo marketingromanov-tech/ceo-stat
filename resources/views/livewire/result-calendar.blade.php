@@ -1,14 +1,14 @@
-<div class="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5">
+<div class="min-w-0 rounded-xl bg-white p-4 shadow-[0_6px_24px_rgba(3,2,41,0.05)] sm:p-6">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div><h2 class="font-extrabold">{{ $readOnly && !$robotId ? 'Общий календарь' : 'Календарь робота' }}</h2><p class="text-sm text-stone-500">{{ $readOnly ? ($robotId ? 'Режим только для просмотра' : 'Сумма результатов доступных роботов по дням') : 'Выберите день для ручного ввода' }}</p></div>
+        <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Статистика</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">{{ $readOnly && !$robotId ? 'Общий календарь' : 'Календарь робота' }}</h2><p class="mt-1 text-sm text-stone-500">{{ $readOnly ? ($robotId ? 'Режим только для просмотра' : 'Сумма результатов доступных роботов по дням') : 'Выберите день для ручного ввода' }}</p></div>
         @if(!$readOnly)<span class="rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold text-green-900">{{ $account ? 'Счёт настроен' : 'Счёт не настроен' }}</span>@endif
     </div>
-    <div class="mb-4 flex items-center justify-between rounded-xl bg-stone-50 p-2">
+    <div class="mb-4 flex items-center justify-between rounded-lg bg-[#fafafb] p-2">
         <button wire:click="previousMonth" class="btn-secondary px-3" aria-label="Предыдущий месяц">←</button>
         <strong class="capitalize">{{ $monthLabel }}</strong>
         <button wire:click="nextMonth" class="btn-secondary px-3" aria-label="Следующий месяц">→</button>
     </div>
-    <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-bold text-stone-400">
+    <div class="overflow-x-auto pb-1"><div class="grid min-w-[600px] grid-cols-7 gap-2 text-center text-xs font-bold text-stone-400">
         @foreach(['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] as $index => $weekday)<div class="py-2 {{ $index >= 5 ? 'text-amber-900' : '' }}">{{ $weekday }}</div>@endforeach
         @for($i = 0; $i < $leadingBlanks; $i++)<div></div>@endfor
         @foreach($days as $day)
@@ -16,7 +16,7 @@
             @php($robotsForDay = $robotBreakdown->get($day->format('Y-m-d'), collect()))
             @php($isLocked = !$readOnly && $trackingStartedAt && $day->format('Y-m-d') < $trackingStartedAt)
             <button wire:click="selectDate('{{ $day->format('Y-m-d') }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
-                class="group relative min-h-16 rounded-xl border p-1.5 text-left transition sm:min-h-20 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-900 ring-2 ring-green-900/15' : 'border-stone-200' }} {{ $isLocked ? 'cursor-not-allowed bg-stone-100 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-amber-50 hover:border-stone-400' : 'bg-white hover:border-stone-400') }}">
+                class="group relative min-h-20 rounded-lg border p-2 text-left transition sm:min-h-24 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-800 ring-2 ring-green-800/10' : 'border-stone-100' }} {{ $isLocked ? 'cursor-not-allowed bg-stone-100 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-amber-50 hover:border-stone-300' : 'bg-white hover:border-stone-300 hover:shadow-sm') }}">
                 <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
                 @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
                 @if($result)
@@ -33,7 +33,7 @@
                 @endif
             </button>
         @endforeach
-    </div>
+    </div></div>
     @if(session('calendar-status'))<p class="mt-4 rounded-xl bg-green-100 px-4 py-3 text-sm font-bold text-green-900">{{ session('calendar-status') }}</p>@endif
     @if(!$readOnly && $selectedDate && in_array(auth()->user()->role->value, ['admin', 'operator'], true))
         <div class="mt-5 rounded-2xl bg-stone-50 p-4">
