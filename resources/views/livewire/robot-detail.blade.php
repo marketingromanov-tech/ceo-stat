@@ -13,7 +13,7 @@
             <button class="btn-primary mt-5 w-full">Сохранить счёт</button>
         </form>
         @else
-            <div class="relative min-h-96 xl:min-h-0">
+            <div class="relative min-h-96 xl:min-h-0" style="align-self: stretch;">
                 <aside class="flex h-full min-h-0 flex-col overflow-hidden rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)] xl:absolute xl:inset-0">
                     <div class="mb-4 shrink-0"><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">История</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">Последние записи</h2><p class="mt-1 text-xs text-[#030229]/40">До 100 последних операций</p></div>
                     <div class="min-h-0 flex-1 space-y-3 overflow-y-auto pr-2">
