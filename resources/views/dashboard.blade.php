@@ -23,12 +23,12 @@
                 <div class="absolute inset-x-0 bottom-0 h-[105px]"><canvas id="cumulative-results-chart"></canvas></div>
             </article>
             <article class="relative h-[220px] overflow-hidden rounded-[10px] bg-white p-5">
-                <div class="relative z-10 flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#605bff]/10 text-xl text-[#605bff]">◎</span><div><p class="text-sm text-[#030229]/55">Сравнение роботов</p><p class="mt-0.5 text-2xl font-extrabold">{{ $robotsCount }}</p></div></div><span class="text-right text-xs font-bold text-[#605bff]">Активных роботов</span></div>
-                <div class="absolute inset-x-0 bottom-0 h-[105px]"><canvas id="robot-results-chart"></canvas></div>
-            </article>
-            <article class="relative h-[220px] overflow-hidden rounded-[10px] bg-white p-5">
                 <div class="relative z-10 flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#ff8f6b]/10 text-xl text-[#ff8f6b]">▥</span><div><p class="text-sm text-[#030229]/55">Результаты по месяцам</p><p class="mt-0.5 text-2xl font-extrabold">{{ number_format($allTimeProfit, 2, ',', ' ') }}</p></div></div><span class="text-right text-xs font-bold text-[#ff8f6b]">{{ count($chartData['monthly']['labels']) }} мес. с данными</span></div>
                 <div class="absolute inset-x-0 bottom-0 h-[105px]"><canvas id="monthly-results-chart"></canvas></div>
+            </article>
+            <article class="relative h-[220px] overflow-hidden rounded-[10px] bg-white p-5">
+                <div class="relative z-10 flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#605bff]/10 text-xl text-[#605bff]">◎</span><div><p class="text-sm text-[#030229]/55">Сравнение роботов</p><p class="mt-0.5 text-2xl font-extrabold">{{ $robotsCount }}</p></div></div><span class="text-right text-xs font-bold text-[#605bff]">Активных роботов</span></div>
+                <div class="absolute inset-x-0 bottom-0 h-[105px]"><canvas id="robot-results-chart"></canvas></div>
             </article>
         </section>
         <script id="dashboard-chart-data" type="application/json">@json($chartData)</script>
