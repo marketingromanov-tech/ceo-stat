@@ -8,14 +8,14 @@
             <article class="stat-card"><p class="stat-label">Среднее в день за всё время</p><p class="stat-value">{{ number_format($allTimeDailyAverage, 2, ',', ' ') }}</p></article>
         </section>
         <section class="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-[10px] bg-[#030229] p-5 text-white"><p class="text-xs font-bold uppercase tracking-wider text-white/60">Итого за месяц</p><p class="mt-2 text-3xl font-extrabold">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article>
-            <article class="stat-card"><p class="stat-label">% за месяц</p><p class="stat-value {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($monthPercent, 3, ',', ' ') }}%</p></article>
-            <article class="stat-card"><p class="stat-label">% за день</p><p class="stat-value {{ $dayPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
-            <article class="stat-card"><p class="stat-label">Среднее в день</p><p class="stat-value">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
+            <article class="rounded-[10px] bg-[#030229] p-5 text-white"><p class="text-xs font-bold uppercase tracking-wider text-white/60">Итого за месяц</p><p class="mt-2 text-3xl font-extrabold" data-dashboard-stat="month-profit">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article>
+            <article class="stat-card"><p class="stat-label">% за месяц</p><p class="stat-value {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}" data-dashboard-stat="month-percent">{{ number_format($monthPercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">% за день</p><p class="stat-value {{ $dayPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}" data-dashboard-stat="day-percent">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">Среднее в день</p><p class="stat-value" data-dashboard-stat="daily-average">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
         </section>
         <section class="mb-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <article class="relative h-[220px] overflow-hidden rounded-[10px] bg-white p-5">
-                <div class="relative z-10 flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#5b93ff]/10 text-xl text-[#5b93ff]">↗</span><div><p class="text-sm text-[#030229]/55">Динамика по дням</p><p class="mt-0.5 text-2xl font-extrabold">{{ number_format($monthProfit, 2, ',', ' ') }}</p></div></div><span class="text-right text-xs font-bold {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $monthPercent >= 0 ? '+' : '' }}{{ number_format($monthPercent, 3, ',', ' ') }}% за месяц</span></div>
+                <div class="relative z-10 flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#5b93ff]/10 text-xl text-[#5b93ff]">↗</span><div><p class="text-sm text-[#030229]/55">Динамика по дням</p><p class="mt-0.5 text-2xl font-extrabold" data-dashboard-stat="month-profit">{{ number_format($monthProfit, 2, ',', ' ') }}</p></div></div><span class="text-right text-xs font-bold {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}" data-dashboard-stat="month-percent-signed">{{ $monthPercent >= 0 ? '+' : '' }}{{ number_format($monthPercent, 3, ',', ' ') }}% за месяц</span></div>
                 <div class="absolute inset-x-0 bottom-0 h-[105px]"><canvas id="daily-results-chart"></canvas></div>
             </article>
             <article class="relative h-[220px] overflow-hidden rounded-[10px] bg-white p-5">
