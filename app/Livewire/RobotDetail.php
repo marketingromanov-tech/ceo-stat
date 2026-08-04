@@ -50,6 +50,20 @@ class RobotDetail extends Component
         $this->selectedDate = $selectedDate;
     }
 
+    public function previousMonth(): void
+    {
+        $this->calendarMonth = CarbonImmutable::createFromFormat('Y-m', $this->calendarMonth)->subMonth()->format('Y-m');
+        $this->selectedDate = null;
+        $this->dispatch('robot-period-selected', month: $this->calendarMonth);
+    }
+
+    public function nextMonth(): void
+    {
+        $this->calendarMonth = CarbonImmutable::createFromFormat('Y-m', $this->calendarMonth)->addMonth()->format('Y-m');
+        $this->selectedDate = null;
+        $this->dispatch('robot-period-selected', month: $this->calendarMonth);
+    }
+
     public function saveAccount(): void
     {
         abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
