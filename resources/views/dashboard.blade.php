@@ -10,7 +10,7 @@
         .number-hover-card:hover > p:last-child { animation: metric-number-wiggle 420ms ease-out; }
         @media (prefers-reduced-motion: reduce) { .number-hover-card:hover > p:last-child { animation: none; } }
     </style>
-    <div class="mx-auto min-h-screen max-w-7xl px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
+    <div class="mx-auto max-w-7xl px-3 py-4 sm:min-h-screen sm:px-6 sm:py-5 lg:px-8">
         <header class="mb-4 sm:mb-7"><h1 class="text-xl font-extrabold sm:text-2xl">Результаты торговли</h1></header>
         <div class="mb-3 flex items-center justify-between rounded-xl bg-white p-1.5 sm:hidden"><button type="button" data-dashboard-month-change="-1" class="grid size-9 place-items-center rounded-lg font-extrabold text-[#605bff]" aria-label="Предыдущий месяц">←</button><strong class="capitalize" data-dashboard-period-name>{{ $monthLabel }}</strong><button type="button" data-dashboard-month-change="1" class="grid size-9 place-items-center rounded-lg font-extrabold text-[#605bff]" aria-label="Следующий месяц">→</button></div>
         <section class="mobile-summary-list mb-5 space-y-3 sm:hidden">
