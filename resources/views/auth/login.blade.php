@@ -1,6 +1,6 @@
 <x-layouts.app title="Вход — CEO Stat">
     <main class="grid min-h-screen place-items-center px-5 py-12">
-        <section class="w-full max-w-md rounded-[10px] bg-white p-8 shadow-[0_12px_40px_rgba(3,2,41,0.08)]">
+        <section class="w-full max-w-md rounded-[10px] bg-white p-6 shadow-[0_12px_40px_rgba(3,2,41,0.08)] sm:p-8">
             <div class="mb-8 flex items-center gap-3">
                 <span class="grid size-11 place-items-center rounded-full bg-[#605bff] text-lg font-extrabold text-white">CS</span>
                 <div><h1 class="text-xl font-extrabold">CEO Stat</h1><p class="text-sm text-stone-500">Статистика торговых роботов</p></div>
