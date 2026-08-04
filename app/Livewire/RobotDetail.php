@@ -22,7 +22,6 @@ class RobotDetail extends Component
     public string $externalLogin = '';
     public string $currency = 'USD';
     public string $initialDeposit = '0';
-    public string $currentBalance = '0';
     public bool $isActive = true;
     public string $calendarMonth;
     public ?string $selectedDate = null;
@@ -40,7 +39,7 @@ class RobotDetail extends Component
         if ($account) {
             $this->name = $account->name; $this->broker = $account->broker ?? ''; $this->platform = $account->platform;
             $this->externalLogin = $account->external_login ?? ''; $this->currency = $account->currency;
-            $this->initialDeposit = (string) $account->initial_deposit; $this->currentBalance = (string) $account->current_balance; $this->isActive = $account->is_active;
+            $this->initialDeposit = (string) $account->initial_deposit; $this->isActive = $account->is_active;
         }
     }
 
@@ -58,10 +57,10 @@ class RobotDetail extends Component
             'name' => ['required', 'string', 'max:255'], 'broker' => ['nullable', 'string', 'max:255'],
             'platform' => ['required', Rule::in(['manual', 'mt4', 'mt5'])], 'externalLogin' => ['nullable', 'string', 'max:255'],
             'currency' => ['required', 'string', 'size:3'], 'initialDeposit' => ['required', 'numeric', 'min:0'],
-            'currentBalance' => ['required', 'numeric'], 'isActive' => ['boolean'],
+            'isActive' => ['boolean'],
         ]);
         $account = $this->robot->account()->firstOrNew(); $old = $account->exists ? $account->toArray() : null;
-        $account->fill(['name' => $data['name'], 'broker' => $data['broker'] ?: null, 'platform' => $data['platform'], 'external_login' => $data['externalLogin'] ?: null, 'currency' => strtoupper($data['currency']), 'initial_deposit' => $data['initialDeposit'], 'current_balance' => $data['currentBalance'], 'is_active' => $data['isActive']])->save();
+        $account->fill(['name' => $data['name'], 'broker' => $data['broker'] ?: null, 'platform' => $data['platform'], 'external_login' => $data['externalLogin'] ?: null, 'currency' => strtoupper($data['currency']), 'initial_deposit' => $data['initialDeposit'], 'is_active' => $data['isActive']])->save();
         AuditLog::query()->create(['user_id' => auth()->id(), 'action' => $old ? 'account.updated' : 'account.created', 'auditable_type' => TradingAccount::class, 'auditable_id' => $account->id, 'old_values' => $old, 'new_values' => $account->toArray(), 'ip_address' => request()->ip(), 'user_agent' => request()->userAgent()]);
         $this->robot->refresh();
         $this->accountRevision++;
