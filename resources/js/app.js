@@ -89,6 +89,11 @@ window.addEventListener('calendar-period-changed', async (event) => {
 
     const data = await response.json();
     if (requestId !== dashboardRequestId) return;
+    const monthLabel = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
+        .format(new Date(`${month}-01T12:00:00`));
+    document.querySelectorAll('[data-dashboard-month-label]').forEach((element) => {
+        element.textContent = `Итого за ${monthLabel}`;
+    });
     updateDashboardStat('month-profit', data.monthProfit, 2);
     updateDashboardStat('month-percent', data.monthPercent, 3, '%');
     updateDashboardStat('month-percent-signed', data.monthPercent, 3, '% за месяц');
