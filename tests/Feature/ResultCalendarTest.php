@@ -39,6 +39,7 @@ class ResultCalendarTest extends TestCase
 
         $this->assertSame(3, TradingResult::query()->where('trading_account_id', $account->id)->whereDate('traded_at', '2026-08-03')->count());
         $this->assertEqualsWithDelta(76.67, TradingResult::query()->where('trading_account_id', $account->id)->sum('amount'), 0.001);
+        $calendar->assertSeeInOrder(['+80,97', '+11,06', '-15,36']);
     }
 
     public function test_operator_can_enter_decimal_amount_with_comma(): void
