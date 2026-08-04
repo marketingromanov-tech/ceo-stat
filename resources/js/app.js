@@ -59,5 +59,47 @@ function renderDashboardCharts() {
     });
 }
 
+function updateDashboardStat(name, value, digits, suffix = '') {
+    const formatted = new Intl.NumberFormat('ru-RU', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    }).format(value);
+
+    document.querySelectorAll(`[data-dashboard-stat="${name}"]`).forEach((element) => {
+        element.textContent = `${formatted}${suffix}`;
+        if (name.includes('percent')) {
+            element.classList.toggle('text-red-700', value < 0);
+            element.classList.toggle('text-red-600', value < 0);
+            element.classList.toggle('text-[#605bff]', value >= 0);
+        }
+    });
+}
+
+let dashboardRequestId = 0;
+
+window.addEventListener('calendar-period-changed', async (event) => {
+    const month = event.detail?.month;
+    if (!month || !document.getElementById('dashboard-chart-data')) return;
+    const requestId = ++dashboardRequestId;
+
+    const response = await fetch(`/dashboard-data?month=${encodeURIComponent(month)}`, {
+        headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    if (requestId !== dashboardRequestId) return;
+    updateDashboardStat('month-profit', data.monthProfit, 2);
+    updateDashboardStat('month-percent', data.monthPercent, 3, '%');
+    updateDashboardStat('month-percent-signed', data.monthPercent, 3, '% за месяц');
+    document.querySelectorAll('[data-dashboard-stat="month-percent-signed"]').forEach((element) => {
+        if (data.monthPercent >= 0) element.textContent = `+${element.textContent}`;
+    });
+    updateDashboardStat('day-percent', data.dayPercent, 3, '%');
+    updateDashboardStat('daily-average', data.dailyAverage, 2);
+    document.getElementById('dashboard-chart-data').textContent = JSON.stringify(data.chartData);
+    renderDashboardCharts();
+});
+
 document.addEventListener('DOMContentLoaded', renderDashboardCharts);
 document.addEventListener('livewire:navigated', renderDashboardCharts);
