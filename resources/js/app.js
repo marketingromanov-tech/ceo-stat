@@ -43,7 +43,7 @@ function renderDashboardCharts() {
     const source = document.getElementById('dashboard-chart-data');
     if (!source) return;
     const data = JSON.parse(source.textContent);
-    const positiveNegative = (values) => values.map((value) => value < 0 ? '#b91c1c' : '#047857');
+    const positiveNegative = (values) => values.map((value) => value < 0 ? '#ff8f6b' : '#605bff');
 
     createChart('daily-results-chart', {
         type: 'bar',
@@ -52,7 +52,7 @@ function renderDashboardCharts() {
     });
     createChart('cumulative-results-chart', {
         type: 'line',
-        data: { labels: data.cumulative.labels, datasets: [{ label: 'Накоплено', data: data.cumulative.values, borderColor: '#92400e', backgroundColor: 'rgba(217, 119, 6, .12)', fill: true, tension: .28, pointRadius: 2, pointHoverRadius: 5 }] },
+        data: { labels: data.cumulative.labels, datasets: [{ label: 'Накоплено', data: data.cumulative.values, borderColor: '#605bff', backgroundColor: 'rgba(96, 91, 255, .10)', fill: true, tension: .28, pointRadius: 2, pointHoverRadius: 5 }] },
         options: chartOptions(),
     });
     createChart('robot-results-chart', {
