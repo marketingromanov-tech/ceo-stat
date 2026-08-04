@@ -169,9 +169,7 @@ class ResultCalendar extends Component
         $start = CarbonImmutable::createFromFormat('Y-m', $this->month)->startOfMonth();
         $end = $start->endOfMonth();
         $results = $this->summaryResults($start, $end, $this->robotId ? $this->accountId : null);
-        $deposit = (float) ($this->accountId
-            ? TradingAccount::query()->whereKey($this->accountId)->value('initial_deposit')
-            : 0);
+        $deposit = $this->percentageDeposit();
         $results->each(function ($result) use ($deposit): void {
             $result->daily_percent = $deposit > 0
                 ? (float) $result->amount / $deposit * 100
@@ -201,6 +199,24 @@ class ResultCalendar extends Component
             ->groupBy('traded_at')
             ->get()
             ->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'));
+    }
+
+    private function percentageDeposit(): float
+    {
+        if ($this->accountId) {
+            return (float) TradingAccount::query()
+                ->whereKey($this->accountId)
+                ->value('initial_deposit');
+        }
+
+        $visibleRobotIds = auth()->user()->role->value === 'viewer'
+            ? auth()->user()->robots()->pluck('robots.id')
+            : null;
+
+        return (float) TradingAccount::query()
+            ->where('is_active', true)
+            ->when($visibleRobotIds, fn ($query) => $query->whereIn('robot_id', $visibleRobotIds))
+            ->sum('initial_deposit');
     }
 
     private function dayResultsQuery()
