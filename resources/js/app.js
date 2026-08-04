@@ -59,6 +59,12 @@ function renderDashboardCharts() {
     });
 }
 
+function openMobileSummaries() {
+    document.querySelectorAll('.mobile-summary-list > details').forEach((details) => {
+        details.open = true;
+    });
+}
+
 function updateDashboardStat(name, value, digits, suffix = '') {
     const formatted = new Intl.NumberFormat('ru-RU', {
         minimumFractionDigits: digits,
@@ -125,5 +131,11 @@ document.addEventListener('click', (event) => {
     updateDashboardPeriod(selectedMonth);
 });
 
-document.addEventListener('DOMContentLoaded', renderDashboardCharts);
-document.addEventListener('livewire:navigated', renderDashboardCharts);
+document.addEventListener('DOMContentLoaded', () => {
+    renderDashboardCharts();
+    openMobileSummaries();
+});
+document.addEventListener('livewire:navigated', () => {
+    renderDashboardCharts();
+    openMobileSummaries();
+});
