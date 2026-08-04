@@ -9,14 +9,14 @@
         <button wire:click="nextMonth" class="btn-secondary px-3" aria-label="Следующий месяц">→</button>
     </div>
     <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-bold text-stone-400">
-        @foreach(['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] as $weekday)<div class="py-2">{{ $weekday }}</div>@endforeach
+        @foreach(['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] as $index => $weekday)<div class="py-2 {{ $index >= 5 ? 'text-amber-900' : '' }}">{{ $weekday }}</div>@endforeach
         @for($i = 0; $i < $leadingBlanks; $i++)<div></div>@endfor
         @foreach($days as $day)
             @php($result = $results->get($day->format('Y-m-d')))
             @php($robotsForDay = $robotBreakdown->get($day->format('Y-m-d'), collect()))
             @php($isLocked = !$readOnly && $trackingStartedAt && $day->format('Y-m-d') < $trackingStartedAt)
             <button wire:click="selectDate('{{ $day->format('Y-m-d') }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
-                class="group relative min-h-16 rounded-xl border p-1.5 text-left transition sm:min-h-20 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-900 ring-2 ring-green-900/15' : 'border-stone-200' }} {{ $isLocked ? 'cursor-not-allowed bg-stone-100 opacity-60' : ($day->isToday() ? 'bg-amber-50 hover:border-stone-400' : 'bg-white hover:border-stone-400') }}">
+                class="group relative min-h-16 rounded-xl border p-1.5 text-left transition sm:min-h-20 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-900 ring-2 ring-green-900/15' : 'border-stone-200' }} {{ $isLocked ? 'cursor-not-allowed bg-stone-100 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-amber-50 hover:border-stone-400' : 'bg-white hover:border-stone-400') }}">
                 <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
                 @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
                 @if($result)
