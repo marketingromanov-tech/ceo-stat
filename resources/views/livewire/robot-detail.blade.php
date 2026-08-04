@@ -11,6 +11,21 @@
         @if(in_array(auth()->user()->role->value, ['admin', 'operator'], true))<form wire:submit="saveAccount" class="h-fit rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)] xl:sticky xl:top-5"><div class="mb-5"><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Настройки</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">Торговый счёт</h2></div>@if(session('account-status'))<p class="mb-4 rounded-lg bg-[#605bff]/10 p-3 text-sm font-bold text-[#605bff]">{{ session('account-status') }}</p>@endif
             <div class="space-y-4"><div><label class="form-label">Название</label><input wire:model="name" class="form-input" placeholder="Основной счёт">@error('name')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div><div><label class="form-label">Брокер</label><input wire:model="broker" class="form-input"></div><div class="grid grid-cols-2 gap-3"><div><label class="form-label">Платформа</label><select wire:model="platform" class="form-input"><option value="manual">Ручной</option><option value="mt4">MT4</option><option value="mt5">MT5</option></select></div><div><label class="form-label">Валюта</label><input wire:model="currency" maxlength="3" class="form-input"></div></div><div><label class="form-label">Логин счёта</label><input wire:model="externalLogin" class="form-input"></div><div><label class="form-label">Депозит</label><input wire:model="initialDeposit" inputmode="decimal" class="form-input"></div><label class="flex items-center gap-2 text-sm font-bold"><input type="checkbox" wire:model="isActive" class="size-4 rounded"> Счёт активен</label></div>
             <button class="btn-primary mt-5 w-full">Сохранить счёт</button>
-        </form>@endif
+        </form>
+        @else
+            <aside class="h-fit rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)] xl:sticky xl:top-5">
+                <div class="mb-4"><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">История</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">Последние записи</h2></div>
+                <div class="max-h-[42rem] space-y-3 overflow-y-auto pr-2">
+                    @forelse($recentResults as $result)
+                        <div class="flex items-center justify-between gap-3 rounded-lg bg-[#fafafb] p-3">
+                            <div><p class="text-sm font-bold text-[#030229]">{{ $robot->name }}</p><p class="text-xs text-[#030229]/40">{{ $result->traded_at->format('d.m.Y') }}</p></div>
+                            <span class="font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount >= 0 ? '+' : '' }}{{ number_format((float) $result->amount, 2, ',', ' ') }}</span>
+                        </div>
+                    @empty
+                        <p class="rounded-lg bg-[#fafafb] p-4 text-sm text-[#030229]/45">Записей пока нет.</p>
+                    @endforelse
+                </div>
+            </aside>
+        @endif
     </div>
 </main>
