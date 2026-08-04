@@ -13,19 +13,21 @@
             <button class="btn-primary mt-5 w-full">Сохранить счёт</button>
         </form>
         @else
-            <aside class="h-fit rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)] xl:sticky xl:top-5">
-                <div class="mb-4"><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">История</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">Последние записи</h2></div>
-                <div class="max-h-[42rem] space-y-3 overflow-y-auto pr-2">
-                    @forelse($recentResults as $result)
-                        <div class="flex items-center justify-between gap-3 rounded-lg bg-[#fafafb] p-3">
-                            <div><p class="text-sm font-bold text-[#030229]">{{ $robot->name }}</p><p class="text-xs text-[#030229]/40">{{ $result->traded_at->format('d.m.Y') }}</p></div>
-                            <span class="font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount >= 0 ? '+' : '' }}{{ number_format((float) $result->amount, 2, ',', ' ') }}</span>
-                        </div>
-                    @empty
-                        <p class="rounded-lg bg-[#fafafb] p-4 text-sm text-[#030229]/45">Записей пока нет.</p>
-                    @endforelse
-                </div>
-            </aside>
+            <div class="relative min-h-96 xl:min-h-0">
+                <aside class="flex h-full min-h-0 flex-col overflow-hidden rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)] xl:absolute xl:inset-0">
+                    <div class="mb-4 shrink-0"><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">История</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">Последние записи</h2><p class="mt-1 text-xs text-[#030229]/40">До 100 последних операций</p></div>
+                    <div class="min-h-0 flex-1 space-y-3 overflow-y-auto pr-2">
+                        @forelse($recentResults as $result)
+                            <div class="flex items-center justify-between gap-3 rounded-lg bg-[#fafafb] p-3">
+                                <div><p class="text-sm font-bold text-[#030229]">{{ $robot->name }}</p><p class="text-xs text-[#030229]/40">{{ $result->traded_at->format('d.m.Y') }}</p></div>
+                                <span class="font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount >= 0 ? '+' : '' }}{{ number_format((float) $result->amount, 2, ',', ' ') }}</span>
+                            </div>
+                        @empty
+                            <p class="rounded-lg bg-[#fafafb] p-4 text-sm text-[#030229]/45">Записей пока нет.</p>
+                        @endforelse
+                    </div>
+                </aside>
+            </div>
         @endif
     </div>
 </main>
