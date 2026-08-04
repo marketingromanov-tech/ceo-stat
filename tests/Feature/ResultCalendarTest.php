@@ -55,6 +55,18 @@ class ResultCalendarTest extends TestCase
         $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'traded_at' => '2026-08-03', 'amount' => -9.03]);
     }
 
+    public function test_robot_calendar_day_shows_result_percentage_of_initial_deposit(): void
+    {
+        $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
+        $robot = Robot::query()->create(['name' => 'Alpha']);
+        $account = TradingAccount::query()->create(['robot_id' => $robot->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 20000, 'current_balance' => 20195]);
+        TradingResult::query()->create(['trading_account_id' => $account->id, 'traded_at' => now()->format('Y-m-d'), 'sequence' => 1, 'amount' => 195, 'source' => 'manual']);
+
+        Livewire::actingAs($operator)->test(ResultCalendar::class, ['robotId' => $robot->id])
+            ->assertSee('+195')
+            ->assertSee('+0,975%');
+    }
+
     public function test_days_before_robot_tracking_start_are_locked(): void
     {
         $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
