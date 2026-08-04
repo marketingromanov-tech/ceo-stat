@@ -1,4 +1,4 @@
-<div class="min-w-0 rounded-xl bg-white p-4 shadow-[0_6px_24px_rgba(3,2,41,0.05)] sm:p-6">
+<div class="min-w-0 rounded-xl bg-white p-3 shadow-[0_6px_24px_rgba(3,2,41,0.05)] sm:p-6">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Статистика</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">{{ $readOnly && !$robotId ? 'Общий календарь' : 'Календарь робота' }}</h2><p class="mt-1 text-sm text-stone-500">{{ $readOnly ? ($robotId ? 'Режим только для просмотра' : 'Сумма результатов доступных роботов по дням') : 'Выберите день для ручного ввода' }}</p></div>
         @if(!$readOnly)<span class="rounded-lg bg-[#605bff]/10 px-3 py-1.5 text-xs font-bold text-[#605bff]">{{ $account ? 'Счёт настроен' : 'Счёт не настроен' }}</span>@endif
@@ -8,7 +8,7 @@
         <strong class="capitalize">{{ $monthLabel }}</strong>
         <button wire:click="nextMonth" class="btn-secondary px-3" aria-label="Следующий месяц">→</button>
     </div>
-    <div class="overflow-x-auto pb-1 lg:overflow-visible"><div class="grid min-w-[600px] grid-cols-7 gap-2 text-center text-xs font-bold text-stone-400">
+    <div class="pb-1"><div class="grid min-w-0 grid-cols-7 gap-1 text-center text-[10px] font-bold text-stone-400 sm:gap-2 sm:text-xs">
         @foreach(['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] as $index => $weekday)<div class="py-2 {{ $index >= 5 ? 'text-amber-900' : '' }}">{{ $weekday }}</div>@endforeach
         @for($i = 0; $i < $leadingBlanks; $i++)<div></div>@endfor
         @foreach($days as $day)
@@ -16,13 +16,13 @@
             @php($robotsForDay = $robotBreakdown->get($day->format('Y-m-d'), collect()))
             @php($isLocked = !$readOnly && $trackingStartedAt && $day->format('Y-m-d') < $trackingStartedAt)
             <button wire:click="selectDate('{{ $day->format('Y-m-d') }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
-                class="group relative min-h-20 rounded-lg border p-2 text-left transition sm:min-h-24 {{ $selectedDate === $day->format('Y-m-d') ? 'border-[#605bff] ring-2 ring-[#605bff]/10' : 'border-[#030229]/8' }} {{ $isLocked ? 'cursor-not-allowed bg-[#030229]/5 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-[#605bff]/5 hover:border-[#605bff]/25' : 'bg-white hover:border-[#605bff]/25') }}">
-                <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
-                @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
+                class="group relative min-h-14 min-w-0 overflow-hidden rounded-md border p-1 text-left transition sm:min-h-24 sm:overflow-visible sm:rounded-lg sm:p-2 {{ $selectedDate === $day->format('Y-m-d') ? 'border-[#605bff] ring-2 ring-[#605bff]/10' : 'border-[#030229]/8' }} {{ $isLocked ? 'cursor-not-allowed bg-[#030229]/5 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-[#605bff]/5 hover:border-[#605bff]/25' : 'bg-white hover:border-[#605bff]/25') }}">
+                <span class="text-[10px] font-extrabold sm:text-xs {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
+                @if($isLocked)<span class="mt-1 hidden text-[9px] font-bold text-stone-400 sm:block">До начала учёта</span>@endif
                 @if($result)
-                    <span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 2, ',', ' ') }}</span>
+                    <span class="mt-1 block truncate text-[9px] font-extrabold sm:mt-2 sm:text-xs {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 2, ',', ' ') }}</span>
                     @if($result->daily_percent !== null)
-                        <span class="mt-0.5 block truncate text-[10px] font-bold {{ $result->daily_percent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
+                        <span class="mt-0.5 block truncate text-[8px] font-bold sm:text-[10px] {{ $result->daily_percent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
                     @endif
                 @endif
                 @if($readOnly && $robotsForDay->isNotEmpty())
