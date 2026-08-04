@@ -19,7 +19,12 @@
                 class="group relative min-h-16 rounded-xl border p-1.5 text-left transition sm:min-h-20 {{ $selectedDate === $day->format('Y-m-d') ? 'border-green-900 ring-2 ring-green-900/15' : 'border-stone-200' }} {{ $isLocked ? 'cursor-not-allowed bg-stone-100 opacity-60' : ($day->isToday() ? 'bg-amber-50 hover:border-stone-400' : 'bg-white hover:border-stone-400') }}">
                 <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
                 @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
-                @if($result)<span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 0, ',', ' ') }}</span>@endif
+                @if($result)
+                    <span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 0, ',', ' ') }}</span>
+                    @if($result->daily_percent !== null)
+                        <span class="mt-0.5 block truncate text-[10px] font-bold {{ $result->daily_percent >= 0 ? 'text-green-700' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
+                    @endif
+                @endif
                 @if($readOnly && $robotsForDay->isNotEmpty())
                     <span class="pointer-events-none absolute bottom-[calc(100%+0.5rem)] left-1/2 z-30 hidden w-56 -translate-x-1/2 rounded-xl bg-stone-950 p-3 text-left text-white shadow-xl group-hover:block">
                         <span class="mb-2 block text-[10px] font-bold uppercase tracking-wider text-white/60">{{ $day->format('d.m.Y') }}</span>
