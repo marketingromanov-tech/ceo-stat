@@ -50,8 +50,9 @@ class DashboardController extends Controller
     private function chartData(Collection $results, CarbonImmutable $monthStart): array
     {
         $dailyGroups = $results->groupBy(fn (TradingResult $result) => $result->traded_at->format('Y-m-d'));
-        $monthDates = collect(range(1, $monthStart->daysInMonth))
-            ->map(fn (int $day) => $monthStart->setDay($day));
+        $monthDailyGroups = $dailyGroups
+            ->filter(fn (Collection $dayResults, string $date) => str_starts_with($date, $monthStart->format('Y-m-')))
+            ->sortKeys();
 
         $runningTotal = 0.0;
         $cumulativeLabels = [];
@@ -78,8 +79,8 @@ class DashboardController extends Controller
 
         return [
             'daily' => [
-                'labels' => $monthDates->map(fn (CarbonImmutable $date) => $date->format('d.m'))->all(),
-                'values' => $monthDates->map(fn (CarbonImmutable $date) => round((float) ($dailyGroups->get($date->format('Y-m-d'))?->sum('amount') ?? 0), 2))->all(),
+                'labels' => $monthDailyGroups->keys()->map(fn (string $date) => CarbonImmutable::parse($date)->format('d.m'))->values()->all(),
+                'values' => $monthDailyGroups->map(fn (Collection $dayResults) => round((float) $dayResults->sum('amount'), 2))->values()->all(),
             ],
             'cumulative' => ['labels' => $cumulativeLabels, 'values' => $cumulativeValues],
             'robots' => ['labels' => $robotGroups->pluck('name')->all(), 'values' => $robotGroups->pluck('value')->all()],
