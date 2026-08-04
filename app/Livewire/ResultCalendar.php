@@ -10,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class ResultCalendar extends Component
@@ -62,6 +63,17 @@ class ResultCalendar extends Component
         $this->notifyPeriodChanged();
 
         return null;
+    }
+
+    #[On('robot-period-selected')]
+    public function selectMonth(string $month): void
+    {
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+            return;
+        }
+
+        $this->month = $month;
+        $this->resetEditor();
     }
 
     public function selectDate(string $date): void
