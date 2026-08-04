@@ -20,21 +20,21 @@
                 <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
                 @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
                 @if($result)
-                    <span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 0, ',', ' ') }}</span>
+                    <span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 0, ',', ' ') }}</span>
                     @if($result->daily_percent !== null)
-                        <span class="mt-0.5 block truncate text-[10px] font-bold {{ $result->daily_percent >= 0 ? 'text-green-700' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
+                        <span class="mt-0.5 block truncate text-[10px] font-bold {{ $result->daily_percent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
                     @endif
                 @endif
                 @if($readOnly && $robotsForDay->isNotEmpty())
                     <span class="pointer-events-none absolute bottom-[calc(100%+0.5rem)] left-1/2 z-30 hidden w-56 -translate-x-1/2 rounded-xl bg-stone-950 p-3 text-left text-white shadow-xl group-hover:block">
                         <span class="mb-2 block text-[10px] font-bold uppercase tracking-wider text-white/60">{{ $day->format('d.m.Y') }}</span>
-                        @foreach($robotsForDay as $robotResult)<span class="flex items-center justify-between gap-3 py-1 text-xs"><span class="truncate font-bold">{{ $robotResult->robot_name }}</span><span class="font-extrabold {{ $robotResult->amount < 0 ? 'text-red-300' : 'text-green-300' }}">{{ $robotResult->amount > 0 ? '+' : '' }}{{ number_format((float)$robotResult->amount, 2, ',', ' ') }}</span></span>@endforeach
+                        @foreach($robotsForDay as $robotResult)<span class="flex items-center justify-between gap-3 py-1 text-xs"><span class="truncate font-bold">{{ $robotResult->robot_name }}</span><span class="font-extrabold {{ $robotResult->amount < 0 ? 'text-red-300' : 'text-violet-300' }}">{{ $robotResult->amount > 0 ? '+' : '' }}{{ number_format((float)$robotResult->amount, 2, ',', ' ') }}</span></span>@endforeach
                     </span>
                 @endif
             </button>
         @endforeach
     </div></div>
-    @if(session('calendar-status'))<p class="mt-4 rounded-xl bg-green-100 px-4 py-3 text-sm font-bold text-green-900">{{ session('calendar-status') }}</p>@endif
+    @if(session('calendar-status'))<p class="mt-4 rounded-lg bg-[#605bff]/10 px-4 py-3 text-sm font-bold text-[#605bff]">{{ session('calendar-status') }}</p>@endif
     @if(!$readOnly && $selectedDate && in_array(auth()->user()->role->value, ['admin', 'operator'], true))
         <div class="mt-5 rounded-2xl bg-stone-50 p-4">
             <div class="mb-4 flex items-center justify-between"><div><p class="form-label">История за день</p><strong>{{ \Carbon\CarbonImmutable::parse($selectedDate)->format('d.m.Y') }}</strong></div><span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-stone-500">{{ $dayResults->count() }} операций</span></div>
@@ -43,7 +43,7 @@
             <div><label class="form-label" for="comment">Комментарий</label><input id="comment" wire:model="comment" class="form-input" placeholder="Необязательно"></div>
             <div class="flex gap-2"><button class="btn-primary">{{ $editingResultId ? 'Обновить' : 'Добавить' }}</button>@if($editingResultId)<button type="button" wire:click="selectDate('{{ $selectedDate }}')" class="btn-secondary">Отмена</button>@endif</div>
         </form>
-            <div class="space-y-2">@forelse($dayResults as $entry)<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3"><div class="flex items-center gap-3"><span class="grid size-7 place-items-center rounded-lg bg-stone-100 text-xs font-extrabold">{{ $entry->sequence }}</span><div><strong class="{{ $entry->amount >= 0 ? 'text-green-800' : 'text-red-700' }}">{{ $entry->amount > 0 ? '+' : '' }}{{ number_format((float)$entry->amount, 2, ',', ' ') }}</strong>@if($entry->comment)<small class="ml-2 text-stone-500">{{ $entry->comment }}</small>@endif</div></div><div class="flex gap-2"><button type="button" wire:click="editResult({{ $entry->id }})" class="btn-secondary">Изменить</button><button type="button" wire:click="deleteResult({{ $entry->id }})" wire:confirm="Удалить эту операцию?" class="btn-secondary text-red-700">Удалить</button></div></div>@empty<p class="rounded-xl bg-white p-3 text-sm text-stone-500">Операций пока нет. Если поступлений не было, добавьте 0.</p>@endforelse</div>
+            <div class="space-y-2">@forelse($dayResults as $entry)<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3"><div class="flex items-center gap-3"><span class="grid size-7 place-items-center rounded-lg bg-stone-100 text-xs font-extrabold">{{ $entry->sequence }}</span><div><strong class="{{ $entry->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $entry->amount > 0 ? '+' : '' }}{{ number_format((float)$entry->amount, 2, ',', ' ') }}</strong>@if($entry->comment)<small class="ml-2 text-stone-500">{{ $entry->comment }}</small>@endif</div></div><div class="flex gap-2"><button type="button" wire:click="editResult({{ $entry->id }})" class="btn-secondary">Изменить</button><button type="button" wire:click="deleteResult({{ $entry->id }})" wire:confirm="Удалить эту операцию?" class="btn-secondary text-red-700">Удалить</button></div></div>@empty<p class="rounded-xl bg-white p-3 text-sm text-stone-500">Операций пока нет. Если поступлений не было, добавьте 0.</p>@endforelse</div>
         </div>
     @endif
 </div>
