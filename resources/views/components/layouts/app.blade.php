@@ -8,24 +8,22 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="min-h-screen bg-stone-50 text-stone-900 antialiased">
+<body class="min-h-screen bg-[#fafafb] text-[#030229] antialiased">
     @auth
-    <div class="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
-        <header class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
-            <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
-                <span class="grid size-10 place-items-center rounded-xl bg-green-950 font-extrabold text-white">CS</span>
-                <span><strong class="block leading-tight">CEO Stat</strong><small class="text-stone-500">{{ auth()->user()->role->label() }}</small></span>
-            </a>
-            <nav class="flex flex-wrap items-center gap-2 text-sm font-bold">
-                <a class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}" href="{{ route('dashboard') }}">Календарь</a>
-                <a class="nav-link {{ request()->routeIs('robots.*') ? 'nav-link-active' : '' }}" href="{{ route('robots.index') }}">{{ auth()->user()->role->value === 'viewer' ? 'Мои роботы' : 'Роботы' }}</a>
-                @if (auth()->user()->role->value === 'admin')<a class="nav-link {{ request()->routeIs('users.*') ? 'nav-link-active' : '' }}" href="{{ route('users.index') }}">Пользователи</a>@endif
-                <form method="POST" action="{{ route('logout') }}">@csrf<button class="nav-link">Выйти</button></form>
-            </nav>
-        </header>
-    </div>
+    <aside class="fixed inset-y-0 left-0 z-40 hidden w-[218px] flex-col bg-white lg:flex">
+        <a href="{{ route('dashboard') }}" class="flex h-28 items-center gap-3 px-7"><span class="grid size-11 place-items-center rounded-full bg-[#605bff] font-extrabold text-white">CS</span><strong class="text-xl">CEO Stat</strong></a>
+        <nav class="mt-4 space-y-2 text-sm font-bold">
+            <a class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}" href="{{ route('dashboard') }}"><span class="grid size-6 grid-cols-2 gap-1">@for($i=0;$i<4;$i++)<i class="rounded-sm bg-current opacity-70"></i>@endfor</span>Обзор</a>
+            <a class="nav-link {{ request()->routeIs('robots.*') ? 'nav-link-active' : '' }}" href="{{ route('robots.index') }}"><span class="grid size-6 place-items-center rounded-md bg-current/10 text-xs">R</span>{{ auth()->user()->role->value === 'viewer' ? 'Мои роботы' : 'Роботы' }}</a>
+            @if (auth()->user()->role->value === 'admin')<a class="nav-link {{ request()->routeIs('users.*') ? 'nav-link-active' : '' }}" href="{{ route('users.index') }}"><span class="grid size-6 place-items-center rounded-md bg-current/10 text-xs">U</span>Пользователи</a>@endif
+        </nav>
+        <div class="mt-auto border-t border-[#030229]/5 p-6"><p class="text-sm font-bold">{{ auth()->user()->name }}</p><p class="mt-0.5 text-xs text-[#030229]/40">{{ auth()->user()->role->label() }}</p><form class="mt-4" method="POST" action="{{ route('logout') }}">@csrf<button class="text-sm font-bold text-[#030229]/50 hover:text-[#605bff]">Выйти →</button></form></div>
+    </aside>
+    <header class="sticky top-0 z-40 flex items-center justify-between border-b border-[#030229]/5 bg-white px-4 py-3 lg:hidden"><a href="{{ route('dashboard') }}" class="flex items-center gap-2"><span class="grid size-9 place-items-center rounded-full bg-[#605bff] text-xs font-extrabold text-white">CS</span><strong>CEO Stat</strong></a><nav class="flex items-center gap-1 text-xs font-bold"><a class="rounded-lg px-2 py-2" href="{{ route('dashboard') }}">Обзор</a><a class="rounded-lg px-2 py-2" href="{{ route('robots.index') }}">Роботы</a>@if(auth()->user()->role->value === 'admin')<a class="rounded-lg px-2 py-2" href="{{ route('users.index') }}">Люди</a>@endif</nav></header>
+    <div class="lg:pl-[218px]">
     @endauth
     {{ $slot }}
+    @auth</div>@endauth
     @livewireScripts
 </body>
 </html>
