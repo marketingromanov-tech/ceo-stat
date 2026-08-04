@@ -1,7 +1,7 @@
 <main class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
     <div class="mb-6"><h1 class="text-2xl font-extrabold">Пользователи</h1><p class="mt-1 text-sm text-stone-500">Роли и доступ наблюдателей к роботам</p></div>
     <div class="grid gap-6 lg:grid-cols-[380px_1fr]">
-        <form wire:submit="save" class="h-fit rounded-2xl border border-stone-200 bg-white p-5">
+        <form wire:submit="save" class="h-fit rounded-[10px] bg-white p-5">
             <h2 class="mb-4 font-extrabold">{{ $editingId ? 'Редактировать' : 'Новый пользователь' }}</h2>
             <div class="space-y-4">
                 <div><label class="form-label">Имя</label><input wire:model="name" class="form-input">@error('name')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
@@ -13,7 +13,7 @@
             </div>
             <div class="mt-5 flex gap-2"><button class="btn-primary">Сохранить</button>@if($editingId)<button type="button" wire:click="cancel" class="btn-secondary">Отмена</button>@endif</div>
         </form>
-        <section class="rounded-2xl border border-stone-200 bg-white p-5">
+        <section class="rounded-[10px] bg-white p-5">
             @if(session('status'))<p class="mb-4 rounded-xl bg-green-100 px-4 py-3 text-sm font-bold text-green-900">{{ session('status') }}</p>@endif
             <div class="space-y-3">@foreach($users as $user)<article class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 p-4"><div><div class="flex items-center gap-2"><strong>{{ $user->name }}</strong><span class="rounded-full bg-stone-100 px-2 py-1 text-xs font-bold">{{ $user->role->label() }}</span><span class="rounded-full px-2 py-1 text-xs font-bold {{ $user->is_active ? 'bg-green-100 text-green-900' : 'bg-red-100 text-red-700' }}">{{ $user->is_active ? 'Активен' : 'Отключён' }}</span></div><p class="mt-1 text-sm text-stone-500">{{ $user->email }}</p>@if($user->role === \App\Enums\UserRole::Viewer)<p class="mt-1 text-xs text-stone-500">{{ $user->robots->isEmpty() ? 'Роботы не назначены' : $user->robots->pluck('name')->join(', ') }}</p>@endif</div><div class="flex gap-2"><button wire:click="edit({{ $user->id }})" class="btn-secondary">Изменить</button>@if($user->id !== auth()->id())<button wire:click="confirmDelete({{ $user->id }})" class="btn-secondary text-red-700">Удалить</button>@endif</div></article>@endforeach</div>
         </section>
