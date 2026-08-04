@@ -8,7 +8,7 @@
         <strong class="capitalize">{{ $monthLabel }}</strong>
         <button wire:click="nextMonth" class="btn-secondary px-3" aria-label="Следующий месяц">→</button>
     </div>
-    <div class="overflow-x-auto pb-1"><div class="grid min-w-[600px] grid-cols-7 gap-2 text-center text-xs font-bold text-stone-400">
+    <div class="overflow-x-auto pb-1 lg:overflow-visible"><div class="grid min-w-[600px] grid-cols-7 gap-2 text-center text-xs font-bold text-stone-400">
         @foreach(['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] as $index => $weekday)<div class="py-2 {{ $index >= 5 ? 'text-amber-900' : '' }}">{{ $weekday }}</div>@endforeach
         @for($i = 0; $i < $leadingBlanks; $i++)<div></div>@endfor
         @foreach($days as $day)
@@ -20,7 +20,7 @@
                 <span class="text-xs font-extrabold {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
                 @if($isLocked)<span class="mt-2 block text-[10px] font-bold text-stone-400">До начала учёта</span>@endif
                 @if($result)
-                    <span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 0, ',', ' ') }}</span>
+                    <span class="mt-2 block truncate text-xs font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 2, ',', ' ') }}</span>
                     @if($result->daily_percent !== null)
                         <span class="mt-0.5 block truncate text-[10px] font-bold {{ $result->daily_percent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
                     @endif
