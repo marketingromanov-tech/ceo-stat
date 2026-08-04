@@ -1,26 +1,28 @@
 <x-layouts.app title="Обзор — CEO Stat">
     <style>
-        .metric-card { position: relative; z-index: 1; overflow: hidden; cursor: pointer; transition: box-shadow .35s ease; }
-        .metric-card::after { content: attr(data-hover-text); position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; padding: 9px 14px; background: rgba(96, 91, 255, .94); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .02em; opacity: 0; transform: translate3d(0, 100%, 0); transition: opacity .2s ease, transform .35s ease; }
-        .metric-card > p { position: relative; z-index: 1; transition: transform .35s ease; }
-        .metric-card:hover { animation: none !important; transform: none !important; box-shadow: 0 16px 36px rgba(3, 2, 41, .13) !important; }
-        .metric-card:hover::after { opacity: 1; transform: translate3d(0, 0, 0); transition-delay: .05s; }
-        .metric-card:hover > p { transform: translate3d(0, -7px, 0); }
-        @media (prefers-reduced-motion: reduce) { .metric-card::after, .metric-card > p { transition: none; } }
+        @keyframes metric-number-wiggle {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            35% { transform: translate3d(3px, -4px, 0) scale(1.045); }
+            65% { transform: translate3d(-2px, -1px, 0) scale(1.025); }
+            100% { transform: translate3d(0, 0, 0) scale(1); }
+        }
+        .number-hover-card > p:last-child { transform-origin: left center; }
+        .number-hover-card:hover > p:last-child { animation: metric-number-wiggle 420ms ease-out; }
+        @media (prefers-reduced-motion: reduce) { .number-hover-card:hover > p:last-child { animation: none; } }
     </style>
     <div class="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <header class="mb-7"><h1 class="text-2xl font-extrabold">Результаты торговли</h1><p class="mt-1 text-sm text-stone-500">Ежедневная статистика роботов и торговых счетов</p></header>
         <section class="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="metric-card rounded-[10px] bg-[#605bff] p-5 text-white" data-hover-text="Общий финансовый результат за весь период"><p class="text-xs font-bold uppercase tracking-wider text-white/65">Итого за всё время</p><p class="mt-2 text-3xl font-extrabold">{{ number_format($allTimeProfit, 2, ',', ' ') }}</p></article>
-            <article class="stat-card metric-card" data-hover-text="Доходность относительно общего депозита"><p class="stat-label">% за всё время</p><p class="stat-value {{ $allTimePercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($allTimePercent, 3, ',', ' ') }}%</p></article>
-            <article class="stat-card metric-card" data-hover-text="Средняя дневная доходность за весь период"><p class="stat-label">% в день за всё время</p><p class="stat-value {{ $allTimeDayPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($allTimeDayPercent, 3, ',', ' ') }}%</p></article>
-            <article class="stat-card metric-card" data-hover-text="Средний финансовый результат активного дня"><p class="stat-label">Среднее в день за всё время</p><p class="stat-value">{{ number_format($allTimeDailyAverage, 2, ',', ' ') }}</p></article>
+            <article class="number-hover-card rounded-[10px] bg-[#605bff] p-5 text-white"><p class="text-xs font-bold uppercase tracking-wider text-white/65">Итого за всё время</p><p class="mt-2 text-3xl font-extrabold">{{ number_format($allTimeProfit, 2, ',', ' ') }}</p></article>
+            <article class="stat-card number-hover-card"><p class="stat-label">% за всё время</p><p class="stat-value {{ $allTimePercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($allTimePercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card number-hover-card"><p class="stat-label">% в день за всё время</p><p class="stat-value {{ $allTimeDayPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($allTimeDayPercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card number-hover-card"><p class="stat-label">Среднее в день за всё время</p><p class="stat-value">{{ number_format($allTimeDailyAverage, 2, ',', ' ') }}</p></article>
         </section>
         <section class="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="metric-card rounded-[10px] bg-[#030229] p-5 text-white" data-hover-text="Общий результат выбранного месяца"><p class="text-xs font-bold uppercase tracking-wider text-white/60">Итого за месяц</p><p class="mt-2 text-3xl font-extrabold" data-dashboard-stat="month-profit">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article>
-            <article class="stat-card metric-card" data-hover-text="Доходность относительно депозита за месяц"><p class="stat-label">% за месяц</p><p class="stat-value {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}" data-dashboard-stat="month-percent">{{ number_format($monthPercent, 3, ',', ' ') }}%</p></article>
-            <article class="stat-card metric-card" data-hover-text="Средняя доходность одного активного дня"><p class="stat-label">% за день</p><p class="stat-value {{ $dayPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}" data-dashboard-stat="day-percent">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
-            <article class="stat-card metric-card" data-hover-text="Средний результат активного дня за месяц"><p class="stat-label">Среднее в день</p><p class="stat-value" data-dashboard-stat="daily-average">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
+            <article class="number-hover-card rounded-[10px] bg-[#030229] p-5 text-white"><p class="text-xs font-bold uppercase tracking-wider text-white/60">Итого за месяц</p><p class="mt-2 text-3xl font-extrabold" data-dashboard-stat="month-profit">{{ number_format($monthProfit, 2, ',', ' ') }}</p></article>
+            <article class="stat-card number-hover-card"><p class="stat-label">% за месяц</p><p class="stat-value {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}" data-dashboard-stat="month-percent">{{ number_format($monthPercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card number-hover-card"><p class="stat-label">% за день</p><p class="stat-value {{ $dayPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}" data-dashboard-stat="day-percent">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
+            <article class="stat-card number-hover-card"><p class="stat-label">Среднее в день</p><p class="stat-value" data-dashboard-stat="daily-average">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
         </section>
         <section class="mb-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <article class="relative h-[220px] overflow-hidden rounded-[10px] bg-white p-5">
