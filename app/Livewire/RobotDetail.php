@@ -84,6 +84,15 @@ class RobotDetail extends Component
             'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
             'dayPercent' => $deposit > 0 && $accountedDays > 0 ? ($monthProfit / $accountedDays) / $deposit * 100 : 0,
             'dailyAverage' => $accountedDays > 0 ? $monthProfit / $accountedDays : 0,
+            'recentResults' => $accountId
+                ? TradingResult::query()
+                    ->where('trading_account_id', $accountId)
+                    ->withinTrackingPeriod()
+                    ->latest('traded_at')
+                    ->latest('sequence')
+                    ->limit(100)
+                    ->get()
+                : collect(),
         ])->layout('components.layouts.app', ['title' => $this->robot->name.' — CEO Stat']);
     }
 }
