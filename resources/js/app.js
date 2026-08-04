@@ -14,13 +14,13 @@ const tooltipLabel = (context) => {
     return `${context.dataset.label}: ${money.format(value ?? 0)}`;
 };
 
-function sparklineOptions() {
+function sparklineOptions(centerValues = false) {
     return {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { intersect: false, mode: 'index' },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: tooltipLabel } } },
-        scales: { x: { display: false, offset: true }, y: { display: false } },
+        scales: { x: { display: false, offset: centerValues }, y: { display: false } },
         layout: { padding: { top: 8 } },
         elements: { point: { radius: 0, hoverRadius: 4 }, line: { borderWidth: 2.5 } },
     };
@@ -50,7 +50,7 @@ function renderDashboardCharts() {
     createChart('robot-results-chart', {
         type: 'line',
         data: { labels: data.robots.labels, datasets: [{ label: 'Результат', data: data.robots.values, borderColor: '#605bff', backgroundColor: 'rgba(96,91,255,.12)', fill: true, tension: .42, pointRadius: data.robots.values.length === 1 ? 4 : 0 }] },
-        options: sparklineOptions(),
+        options: sparklineOptions(true),
     });
     createChart('monthly-results-chart', {
         type: 'line',
