@@ -36,17 +36,6 @@ function chartOptions(indexAxis = 'x') {
     };
 }
 
-function sparklineOptions() {
-    return {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { intersect: false, mode: 'index' },
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: tooltipLabel } } },
-        scales: { x: { display: false }, y: { display: false } },
-        elements: { point: { radius: 0, hoverRadius: 4 }, line: { borderWidth: 2.5 } },
-    };
-}
-
 function createChart(id, configuration) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
@@ -58,30 +47,27 @@ function renderDashboardCharts() {
     const source = document.getElementById('dashboard-chart-data');
     if (!source) return;
     const data = JSON.parse(source.textContent);
+    const positiveNegative = (values) => values.map((value) => value < 0 ? '#ff8f6b' : '#5b93ff');
+
     createChart('daily-results-chart', {
-        type: 'line',
-        data: { labels: data.daily.labels, datasets: [{ label: 'Результат', data: data.daily.values, borderColor: '#5b93ff', backgroundColor: 'rgba(91,147,255,.10)', fill: true, tension: .38 }] },
-        options: sparklineOptions(),
+        type: 'bar',
+        data: { labels: data.daily.labels, datasets: [{ label: 'Результат', data: data.daily.values, backgroundColor: positiveNegative(data.daily.values), borderRadius: 6 }] },
+        options: chartOptions(),
     });
     createChart('cumulative-results-chart', {
         type: 'line',
-        data: { labels: data.cumulative.labels, datasets: [{ label: 'Накоплено', data: data.cumulative.values, borderColor: '#605bff', backgroundColor: 'rgba(96, 91, 255, .10)', fill: true, tension: .28, pointRadius: 2, pointHoverRadius: 5 }] },
-        options: sparklineOptions(),
-    });
-    createChart('trading-dynamics-chart', {
-        type: 'line',
-        data: { labels: data.daily.labels, datasets: [{ label: 'Результат', data: data.daily.values, borderColor: '#605bff', backgroundColor: 'rgba(96,91,255,.08)', fill: true, tension: .35, pointRadius: 2, pointHoverRadius: 5 }] },
+        data: { labels: data.cumulative.labels, datasets: [{ label: 'Накоплено', data: data.cumulative.values, borderColor: '#ffc327', backgroundColor: 'rgba(255,195,39,.12)', fill: true, tension: .35, pointRadius: 2, pointHoverRadius: 5 }] },
         options: chartOptions(),
     });
     createChart('robot-results-chart', {
-        type: 'doughnut',
-        data: { labels: data.robots.labels, datasets: [{ label: 'Результат', data: data.robots.values.map((value) => Math.abs(value)), backgroundColor: ['#5b93ff', '#ffd66b', '#ff8f6b', '#605bff', '#26c0e2'], borderWidth: 0, spacing: 2 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', color: '#6b6a7d', padding: 16, boxWidth: 8 } }, tooltip: { callbacks: { label: tooltipLabel } } } },
+        type: 'bar',
+        data: { labels: data.robots.labels, datasets: [{ label: 'Результат', data: data.robots.values, backgroundColor: positiveNegative(data.robots.values), borderRadius: 7 }] },
+        options: chartOptions('y'),
     });
     createChart('monthly-results-chart', {
         type: 'bar',
-        data: { labels: data.monthly.labels, datasets: [{ label: 'Результат', data: data.monthly.values, backgroundColor: data.monthly.values.map((_, index) => index % 2 ? '#5b93ff' : '#ff8f6b'), borderRadius: 7, barThickness: 10 }] },
-        options: chartOptions('y'),
+        data: { labels: data.monthly.labels, datasets: [{ label: 'Результат', data: data.monthly.values, backgroundColor: positiveNegative(data.monthly.values), borderRadius: 7 }] },
+        options: chartOptions(),
     });
 }
 
