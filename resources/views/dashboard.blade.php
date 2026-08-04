@@ -14,21 +14,21 @@
             <article class="stat-card"><p class="stat-label">Среднее в день</p><p class="stat-value">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
         </section>
         <section class="mb-7 grid gap-5 xl:grid-cols-2">
-            <article class="overflow-hidden rounded-[10px] bg-white pt-5">
-                <div class="flex items-center justify-between gap-4 px-5"><div class="flex items-center gap-3"><span class="grid h-12 w-12 place-items-center rounded-full bg-[#5b93ff]/10 text-xl text-[#5b93ff]">↗</span><div><p class="text-sm text-[#030229]/55">Динамика по дням</p><p class="mt-1 text-2xl font-extrabold">{{ number_format($monthProfit, 2, ',', ' ') }}</p></div></div><span class="text-xs font-bold {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $monthPercent >= 0 ? '+' : '' }}{{ number_format($monthPercent, 3, ',', ' ') }}% за месяц</span></div>
-                <div class="mt-3 h-56 px-2"><canvas id="daily-results-chart"></canvas></div>
+            <article class="flex h-[306px] flex-col overflow-hidden rounded-[10px] bg-white p-5">
+                <div class="flex min-h-14 items-center justify-between gap-4"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#5b93ff]/10 text-xl text-[#5b93ff]">↗</span><div><p class="text-sm text-[#030229]/55">Динамика по дням</p><p class="mt-0.5 text-2xl font-extrabold">{{ number_format($monthProfit, 2, ',', ' ') }}</p></div></div><span class="text-right text-xs font-bold {{ $monthPercent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $monthPercent >= 0 ? '+' : '' }}{{ number_format($monthPercent, 3, ',', ' ') }}% за месяц</span></div>
+                <div class="mt-3 min-h-0 flex-1"><canvas id="daily-results-chart"></canvas></div>
             </article>
-            <article class="overflow-hidden rounded-[10px] bg-white pt-5">
-                <div class="flex items-center justify-between gap-4 px-5"><div class="flex items-center gap-3"><span class="grid h-12 w-12 place-items-center rounded-full bg-[#ffd66b]/20 text-xl text-[#c28a00]">∑</span><div><p class="text-sm text-[#030229]/55">Накопительный результат</p><p class="mt-1 text-2xl font-extrabold">{{ number_format($allTimeProfit, 2, ',', ' ') }}</p></div></div><span class="text-xs font-bold {{ $allTimePercent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $allTimePercent >= 0 ? '+' : '' }}{{ number_format($allTimePercent, 3, ',', ' ') }}% за всё время</span></div>
-                <div class="mt-3 h-56 px-2"><canvas id="cumulative-results-chart"></canvas></div>
+            <article class="flex h-[306px] flex-col overflow-hidden rounded-[10px] bg-white p-5">
+                <div class="flex min-h-14 items-center justify-between gap-4"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#ffd66b]/20 text-xl text-[#c28a00]">∑</span><div><p class="text-sm text-[#030229]/55">Накопительный результат</p><p class="mt-0.5 text-2xl font-extrabold">{{ number_format($allTimeProfit, 2, ',', ' ') }}</p></div></div><span class="text-right text-xs font-bold {{ $allTimePercent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $allTimePercent >= 0 ? '+' : '' }}{{ number_format($allTimePercent, 3, ',', ' ') }}% за всё время</span></div>
+                <div class="mt-3 min-h-0 flex-1"><canvas id="cumulative-results-chart"></canvas></div>
             </article>
-            <article class="overflow-hidden rounded-[10px] bg-white pt-5">
-                <div class="flex items-center gap-3 px-5"><span class="grid h-12 w-12 place-items-center rounded-full bg-[#605bff]/10 text-xl text-[#605bff]">◎</span><div><p class="text-sm text-[#030229]/55">Сравнение роботов</p><p class="mt-1 text-lg font-extrabold">Вклад каждого робота</p></div></div>
-                <div class="mt-3 h-64 px-3 pb-3"><canvas id="robot-results-chart"></canvas></div>
+            <article class="flex h-[306px] flex-col overflow-hidden rounded-[10px] bg-white p-5">
+                <div class="flex min-h-14 items-center justify-between gap-4"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#605bff]/10 text-xl text-[#605bff]">◎</span><div><p class="text-sm text-[#030229]/55">Сравнение роботов</p><p class="mt-0.5 text-2xl font-extrabold">{{ $robotsCount }}</p></div></div><span class="text-right text-xs font-bold text-[#605bff]">Активных роботов</span></div>
+                <div class="mt-3 min-h-0 flex-1"><canvas id="robot-results-chart"></canvas></div>
             </article>
-            <article class="overflow-hidden rounded-[10px] bg-white pt-5">
-                <div class="flex items-center gap-3 px-5"><span class="grid h-12 w-12 place-items-center rounded-full bg-[#ff8f6b]/10 text-xl text-[#ff8f6b]">▥</span><div><p class="text-sm text-[#030229]/55">Результаты по месяцам</p><p class="mt-1 text-lg font-extrabold">Последние 12 месяцев</p></div></div>
-                <div class="mt-3 h-64 px-3 pb-3"><canvas id="monthly-results-chart"></canvas></div>
+            <article class="flex h-[306px] flex-col overflow-hidden rounded-[10px] bg-white p-5">
+                <div class="flex min-h-14 items-center justify-between gap-4"><div class="flex items-center gap-3"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#ff8f6b]/10 text-xl text-[#ff8f6b]">▥</span><div><p class="text-sm text-[#030229]/55">Результаты по месяцам</p><p class="mt-0.5 text-2xl font-extrabold">{{ count($chartData['monthly']['labels']) }}</p></div></div><span class="text-right text-xs font-bold text-[#ff8f6b]">Месяцев с данными</span></div>
+                <div class="mt-3 min-h-0 flex-1"><canvas id="monthly-results-chart"></canvas></div>
             </article>
         </section>
         <script id="dashboard-chart-data" type="application/json">@json($chartData)</script>
