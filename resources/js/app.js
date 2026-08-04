@@ -77,8 +77,7 @@ function updateDashboardStat(name, value, digits, suffix = '') {
 
 let dashboardRequestId = 0;
 
-window.addEventListener('calendar-period-changed', async (event) => {
-    const month = event.detail?.month;
+async function updateDashboardPeriod(month) {
     if (!month || !document.getElementById('dashboard-chart-data')) return;
     const requestId = ++dashboardRequestId;
 
@@ -91,6 +90,10 @@ window.addEventListener('calendar-period-changed', async (event) => {
     if (requestId !== dashboardRequestId) return;
     const monthLabel = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
         .format(new Date(`${month}-01T12:00:00`));
+    document.getElementById('dashboard-chart-data').dataset.month = month;
+    document.querySelectorAll('[data-dashboard-period-name]').forEach((element) => {
+        element.textContent = monthLabel;
+    });
     document.querySelectorAll('[data-dashboard-month-label]').forEach((element) => {
         element.textContent = `Итого за ${monthLabel}`;
     });
@@ -104,6 +107,22 @@ window.addEventListener('calendar-period-changed', async (event) => {
     updateDashboardStat('daily-average', data.dailyAverage, 2);
     document.getElementById('dashboard-chart-data').textContent = JSON.stringify(data.chartData);
     renderDashboardCharts();
+}
+
+window.addEventListener('calendar-period-changed', (event) => {
+    updateDashboardPeriod(event.detail?.month);
+});
+
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-dashboard-month-change]');
+    const source = document.getElementById('dashboard-chart-data');
+    if (!button || !source) return;
+
+    const [year, month] = source.dataset.month.split('-').map(Number);
+    const date = new Date(year, month - 1 + Number(button.dataset.dashboardMonthChange), 1, 12);
+    const selectedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    window.Livewire?.dispatch('dashboard-period-selected', { month: selectedMonth });
+    updateDashboardPeriod(selectedMonth);
 });
 
 document.addEventListener('DOMContentLoaded', renderDashboardCharts);
