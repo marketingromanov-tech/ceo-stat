@@ -1,4 +1,16 @@
 <x-layouts.app title="Обзор — CEO Stat">
+    <style>
+        @keyframes metric-card-inline-wiggle {
+            0% { transform: translateY(0) rotate(0) scale(1); }
+            30% { transform: translateY(-7px) rotate(-0.6deg) scale(1.025); }
+            55% { transform: translateY(-6px) rotate(0.6deg) scale(1.025); }
+            75% { transform: translateY(-6px) rotate(-0.25deg) scale(1.025); }
+            100% { transform: translateY(-6px) rotate(0) scale(1.025); }
+        }
+        .metric-card { position: relative; z-index: 1; cursor: default; transition: transform 220ms ease, box-shadow 220ms ease; }
+        .metric-card:hover { z-index: 5; animation: metric-card-inline-wiggle 380ms ease-out both; box-shadow: 0 20px 42px rgba(96, 91, 255, .24) !important; }
+        @media (prefers-reduced-motion: reduce) { .metric-card:hover { animation: none; transform: translateY(-4px); } }
+    </style>
     <div class="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <header class="mb-7"><h1 class="text-2xl font-extrabold">Результаты торговли</h1><p class="mt-1 text-sm text-stone-500">Ежедневная статистика роботов и торговых счетов</p></header>
         <section class="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
