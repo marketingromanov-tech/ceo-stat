@@ -76,6 +76,12 @@ class ResultCalendar extends Component
         $this->resetEditor();
     }
 
+    #[On('dashboard-period-selected')]
+    public function selectDashboardMonth(string $month): void
+    {
+        $this->selectMonth($month);
+    }
+
     public function selectDate(string $date): void
     {
         if ($this->readOnly || ! $this->accountId || $this->dateIsLocked($date)) {
