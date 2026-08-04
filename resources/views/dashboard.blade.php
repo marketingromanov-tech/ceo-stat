@@ -13,11 +13,18 @@
             <article class="stat-card"><p class="stat-label">% за день</p><p class="stat-value {{ $dayPercent >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($dayPercent, 3, ',', ' ') }}%</p></article>
             <article class="stat-card"><p class="stat-label">Среднее в день</p><p class="stat-value">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
         </section>
-        <section class="mb-7 grid gap-5 xl:grid-cols-2">
-            <article class="rounded-[10px] bg-white p-5"><div class="mb-4"><h2 class="font-extrabold">Динамика по дням</h2><p class="text-sm text-[#030229]/45">Общий результат за выбранный месяц</p></div><div class="h-72"><canvas id="daily-results-chart"></canvas></div></article>
-            <article class="rounded-[10px] bg-white p-5"><div class="mb-4"><h2 class="font-extrabold">Накопительный результат</h2><p class="text-sm text-[#030229]/45">Изменение итога за всё время</p></div><div class="h-72"><canvas id="cumulative-results-chart"></canvas></div></article>
-            <article class="rounded-[10px] bg-white p-5"><div class="mb-4"><h2 class="font-extrabold">Сравнение роботов</h2><p class="text-sm text-[#030229]/45">Вклад каждого робота в общий результат</p></div><div class="h-72"><canvas id="robot-results-chart"></canvas></div></article>
-            <article class="rounded-[10px] bg-white p-5"><div class="mb-4"><h2 class="font-extrabold">Результаты по месяцам</h2><p class="text-sm text-[#030229]/45">Последние 12 месяцев</p></div><div class="h-72"><canvas id="monthly-results-chart"></canvas></div></article>
+        <section class="mb-7 grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+            <div class="space-y-5">
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <article class="relative overflow-hidden rounded-[10px] bg-white p-5"><div class="relative z-10 flex items-start justify-between gap-3"><div><p class="text-sm text-[#030229]/50">Результат за месяц</p><p class="mt-2 text-2xl font-extrabold">{{ number_format($monthProfit, 2, ',', ' ') }}</p></div><span class="rounded-lg bg-[#5b93ff]/10 px-2 py-1 text-xs font-bold text-[#5b93ff]">{{ number_format($monthPercent, 3, ',', ' ') }}%</span></div><div class="mt-3 h-24"><canvas id="daily-results-chart"></canvas></div></article>
+                    <article class="relative overflow-hidden rounded-[10px] bg-white p-5"><div class="relative z-10 flex items-start justify-between gap-3"><div><p class="text-sm text-[#030229]/50">Накоплено за всё время</p><p class="mt-2 text-2xl font-extrabold">{{ number_format($allTimeProfit, 2, ',', ' ') }}</p></div><span class="rounded-lg bg-[#ffd66b]/20 px-2 py-1 text-xs font-bold text-[#b58100]">{{ number_format($allTimePercent, 3, ',', ' ') }}%</span></div><div class="mt-3 h-24"><canvas id="cumulative-results-chart"></canvas></div></article>
+                </div>
+                <article class="rounded-[10px] bg-white p-5"><div class="mb-5 flex items-start justify-between gap-4"><div><h2 class="text-lg font-bold">Динамика торговли</h2><p class="mt-1 text-sm text-[#030229]/45">Результаты по дням выбранного месяца</p></div><span class="text-2xl text-[#030229]/30">•••</span></div><div class="h-80"><canvas id="trading-dynamics-chart"></canvas></div></article>
+            </div>
+            <div class="space-y-5">
+                <article class="rounded-[10px] bg-white p-5"><div class="mb-5"><h2 class="text-lg font-bold">Результаты по месяцам</h2><p class="mt-1 text-sm text-[#030229]/45">Последние 12 месяцев</p></div><div class="h-72"><canvas id="monthly-results-chart"></canvas></div></article>
+                <article class="rounded-[10px] bg-white p-5"><div class="mb-2 flex items-start justify-between"><div><h2 class="text-lg font-bold">Вклад роботов</h2><p class="mt-1 text-sm text-[#030229]/45">Доля в общем результате</p></div><span class="text-2xl text-[#030229]/30">•••</span></div><div class="mx-auto h-64 max-w-72"><canvas id="robot-results-chart"></canvas></div></article>
+            </div>
         </section>
         <script id="dashboard-chart-data" type="application/json">@json($chartData)</script>
         <section class="grid gap-6 lg:grid-cols-[1fr_340px]">
