@@ -5,6 +5,12 @@
 
 @layer components {
     .stat-card { @apply rounded-[10px] border-0 bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.04)]; }
+    .metric-card {
+        transform: translateZ(0);
+        transition: transform 220ms cubic-bezier(.2, .8, .2, 1), box-shadow 220ms ease;
+        will-change: transform;
+    }
+    .metric-card > p:last-child { transition: transform 220ms cubic-bezier(.2, .8, .2, 1); }
     .stat-label { @apply text-xs font-bold uppercase tracking-wider text-[#030229]/50; }
     .stat-value { @apply mt-2 text-3xl font-extrabold text-[#030229]; }
     .nav-link { @apply flex items-center gap-3 rounded-r-lg px-7 py-3 text-[#030229]/50 transition hover:bg-[#605bff]/5 hover:text-[#605bff]; }
@@ -13,6 +19,19 @@
     .form-input { @apply w-full rounded-lg border border-[#030229]/15 bg-white px-3 py-2.5 text-sm text-[#030229] outline-none transition focus:border-[#605bff] focus:ring-2 focus:ring-[#605bff]/10; }
     .btn-primary { @apply rounded-lg bg-[#605bff] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#4f4ae8] disabled:cursor-not-allowed disabled:opacity-50; }
     .btn-secondary { @apply rounded-lg border border-[#030229]/10 bg-white px-4 py-2.5 text-sm font-extrabold text-[#030229] transition hover:border-[#605bff]/30 hover:bg-[#605bff]/5; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .metric-card:hover {
+        transform: translateY(-5px) scale(1.015);
+        box-shadow: 0 16px 34px rgba(3, 2, 41, 0.12);
+    }
+    .metric-card:hover > p:last-child { transform: translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .metric-card,
+    .metric-card > p:last-child { transition: none; }
 }
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
