@@ -6,12 +6,34 @@ use App\Models\Robot;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function data(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['month' => ['required', 'date_format:Y-m']]);
+        $monthStart = CarbonImmutable::createFromFormat('Y-m', $validated['month'])->startOfMonth();
+        $monthEnd = $monthStart->endOfMonth();
+        $monthResults = TradingResult::query()->visibleTo($request->user())->withinTrackingPeriod()->whereBetween('traded_at', [$monthStart, $monthEnd]);
+        $monthProfit = (float) (clone $monthResults)->sum('amount');
+        $activeDays = (clone $monthResults)->distinct('traded_at')->count('traded_at');
+        $visibleRobotIds = $request->user()->role->value === 'viewer' ? $request->user()->robots()->pluck('robots.id') : null;
+        $deposit = (float) TradingAccount::query()->where('is_active', true)->when($visibleRobotIds, fn ($query) => $query->whereIn('robot_id', $visibleRobotIds))->sum('initial_deposit');
+        $chartResults = TradingResult::query()->visibleTo($request->user())->withinTrackingPeriod()->with('account.robot:id,name')->orderBy('traded_at')->orderBy('sequence')->get();
+
+        return response()->json([
+            'monthProfit' => $monthProfit,
+            'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
+            'dayPercent' => $deposit > 0 && $activeDays > 0 ? ($monthProfit / $activeDays) / $deposit * 100 : 0,
+            'dailyAverage' => $activeDays > 0 ? $monthProfit / $activeDays : 0,
+            'chartData' => $this->chartData($chartResults, $monthStart),
+        ]);
+    }
+
     public function index(Request $request): View
     {
         $requestedMonth = $request->query('month');
