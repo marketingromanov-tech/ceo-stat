@@ -20,7 +20,7 @@ function sparklineOptions() {
         maintainAspectRatio: false,
         interaction: { intersect: false, mode: 'index' },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: tooltipLabel } } },
-        scales: { x: { display: false }, y: { display: false } },
+        scales: { x: { display: false, offset: true }, y: { display: false } },
         layout: { padding: { top: 8 } },
         elements: { point: { radius: 0, hoverRadius: 4 }, line: { borderWidth: 2.5 } },
     };
