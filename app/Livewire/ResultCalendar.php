@@ -209,7 +209,7 @@ class ResultCalendar extends Component
             ->where('trading_account_id', $this->accountId)
             ->whereDate('traded_at', $this->selectedDate)
             ->where('source', 'manual')
-            ->orderBy('sequence');
+            ->orderByDesc('sequence');
     }
 
     private function robotBreakdown(CarbonImmutable $start, CarbonImmutable $end): Collection
