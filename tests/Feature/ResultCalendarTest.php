@@ -112,6 +112,7 @@ class ResultCalendarTest extends TestCase
         $viewer = User::factory()->create(['role' => UserRole::Viewer, 'is_active' => true]);
         $alpha = Robot::query()->create(['name' => 'Alpha']);
         $beta = Robot::query()->create(['name' => 'Beta']);
+        $viewer->robots()->attach([$alpha->id, $beta->id]);
         $alphaAccount = TradingAccount::query()->create(['robot_id' => $alpha->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000, 'current_balance' => 1100]);
         $betaAccount = TradingAccount::query()->create(['robot_id' => $beta->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000, 'current_balance' => 950]);
         TradingResult::query()->create(['trading_account_id' => $alphaAccount->id, 'traded_at' => now()->format('Y-m-d'), 'sequence' => 1, 'amount' => 100, 'source' => 'manual']);
@@ -121,6 +122,7 @@ class ResultCalendarTest extends TestCase
             ->assertSee('Alpha')
             ->assertSee('Beta')
             ->assertSee('+100,00')
-            ->assertSee('-50,00');
+            ->assertSee('-50,00')
+            ->assertSee('+2,500%');
     }
 }
