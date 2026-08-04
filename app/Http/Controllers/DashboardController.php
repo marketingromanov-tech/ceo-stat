@@ -59,6 +59,7 @@ class DashboardController extends Controller
             'robotsCount' => Robot::query()->where('is_active', true)->when($visibleRobotIds, fn ($query) => $query->whereIn('id', $visibleRobotIds))->count(),
             'accountsCount' => TradingAccount::query()->where('is_active', true)->when($visibleRobotIds, fn ($query) => $query->whereIn('robot_id', $visibleRobotIds))->count(),
             'deposit' => $deposit,
+            'month' => $month,
             'monthLabel' => $monthStart->translatedFormat('F Y'),
             'monthProfit' => $monthProfit,
             'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
