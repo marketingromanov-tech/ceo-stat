@@ -25,8 +25,9 @@ class ResultCalendarTest extends TestCase
             ->call('selectDate', '2026-08-03')
             ->set('amount', '125.50')->set('comment', 'Ручной результат')->call('save')->assertHasNoErrors();
 
-        $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'traded_at' => '2026-08-03', 'amount' => 125.50, 'source' => 'manual']);
-        $this->assertDatabaseHas(Robot::class, ['id' => $account->robot_id, 'tracking_started_at' => '2026-08-03']);
+        $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'amount' => 125.50, 'source' => 'manual']);
+        $this->assertSame('2026-08-03', TradingResult::query()->where('trading_account_id', $account->id)->firstOrFail()->traded_at->format('Y-m-d'));
+        $this->assertSame('2026-08-03', Robot::query()->findOrFail($account->robot_id)->tracking_started_at->format('Y-m-d'));
     }
 
     public function test_operator_can_add_multiple_results_to_one_day(): void
@@ -53,7 +54,8 @@ class ResultCalendarTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'traded_at' => '2026-08-03', 'amount' => -9.03]);
+        $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'amount' => -9.03]);
+        $this->assertSame('2026-08-03', TradingResult::query()->where('trading_account_id', $account->id)->firstOrFail()->traded_at->format('Y-m-d'));
     }
 
     public function test_robot_calendar_day_shows_result_percentage_of_initial_deposit(): void
@@ -124,5 +126,43 @@ class ResultCalendarTest extends TestCase
             ->assertSee('+100,00')
             ->assertSee('-50,00')
             ->assertSee('+2,500%');
+    }
+
+    public function test_trading_result_saved_event_refreshes_matching_calendar_without_resetting_state(): void
+    {
+        $this->travelTo('2026-08-08');
+        $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
+        $robot = Robot::query()->create(['name' => 'Alpha']);
+        $account = TradingAccount::query()->create(['robot_id' => $robot->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000]);
+
+        $calendar = Livewire::actingAs($operator)->test(ResultCalendar::class, ['robotId' => $robot->id])
+            ->call('selectDate', '2026-08-03')
+            ->set('amount', '17,50')
+            ->set('comment', 'Draft comment');
+
+        TradingResult::query()->create(['trading_account_id' => $account->id, 'traded_at' => '2026-08-03', 'sequence' => 1, 'amount' => 321.45, 'source' => 'manual']);
+
+        $calendar->dispatch('trading-result-saved', robotId: $robot->id, accountId: $account->id, date: '2026-08-03')
+            ->assertSet('month', '2026-08')
+            ->assertSet('selectedDate', '2026-08-03')
+            ->assertSet('amount', '17,50')
+            ->assertSet('comment', 'Draft comment')
+            ->assertSee('+321,45');
+    }
+
+    public function test_trading_result_saved_event_for_another_robot_does_not_refresh_calendar(): void
+    {
+        $this->travelTo('2026-08-08');
+        $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
+        $alpha = Robot::query()->create(['name' => 'Alpha']);
+        $beta = Robot::query()->create(['name' => 'Beta']);
+        $alphaAccount = TradingAccount::query()->create(['robot_id' => $alpha->id, 'name' => 'Alpha account', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000]);
+        $betaAccount = TradingAccount::query()->create(['robot_id' => $beta->id, 'name' => 'Beta account', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000]);
+
+        $calendar = Livewire::actingAs($operator)->test(ResultCalendar::class, ['robotId' => $alpha->id]);
+        TradingResult::query()->create(['trading_account_id' => $alphaAccount->id, 'traded_at' => '2026-08-03', 'sequence' => 1, 'amount' => 654.32, 'source' => 'manual']);
+
+        $calendar->dispatch('trading-result-saved', robotId: $beta->id, accountId: $betaAccount->id, date: '2026-08-03')
+            ->assertDontSee('654,32');
     }
 }

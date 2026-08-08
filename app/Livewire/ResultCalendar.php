@@ -7,6 +7,7 @@ use App\Models\Robot;
 use App\Models\RobotStatusPeriod;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
+use App\Services\ManualTradingResultService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -81,6 +82,14 @@ class ResultCalendar extends Component
         $this->selectMonth($month);
     }
 
+    #[On('trading-result-saved')]
+    public function refreshAfterTradingResultSaved(int $robotId, int $accountId, string $date): void
+    {
+        if ($this->robotId !== $robotId || $this->accountId !== $accountId) {
+            $this->skipRender();
+        }
+    }
+
     public function selectDate(string $date): void
     {
         if ($this->readOnly || ! $this->accountId || $this->dateIsLocked($date)) {
@@ -102,7 +111,7 @@ class ResultCalendar extends Component
         $this->comment = $result->comment ?? '';
     }
 
-    public function save(): void
+    public function save(ManualTradingResultService $resultService): void
     {
         abort_unless(! $this->readOnly && in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
 
@@ -119,21 +128,23 @@ class ResultCalendar extends Component
             'amount.between' => 'Сумма выходит за допустимый диапазон.',
         ]);
 
-        $result = $this->editingResultId
-            ? $this->dayResultsQuery()->findOrFail($this->editingResultId)
-            : new TradingResult([
-                'trading_account_id' => $validated['accountId'],
-                'traded_at' => $validated['selectedDate'],
-                'source' => 'manual',
-                'sequence' => ((int) $this->dayResultsQuery()->max('sequence')) + 1,
-            ]);
-        $result->fill([
-            'amount' => $validated['amount'],
-            'comment' => $validated['comment'] ?: null,
-            'created_by' => auth()->id(),
-        ])->save();
-
-        $this->audit('result.saved', $result, $result->getChanges());
+        if ($this->editingResultId) {
+            $result = $this->dayResultsQuery()->findOrFail($this->editingResultId);
+            $result->fill([
+                'amount' => $validated['amount'],
+                'comment' => $validated['comment'] ?: null,
+                'created_by' => auth()->id(),
+            ])->save();
+            $this->audit('result.saved', $result, $result->getChanges());
+        } else {
+            $result = $resultService->create(
+                TradingAccount::query()->findOrFail($validated['accountId']),
+                CarbonImmutable::parse($validated['selectedDate']),
+                (float) $validated['amount'],
+                $validated['comment'] ?: null,
+                auth()->user(),
+            );
+        }
         $this->trackingStartedAt ??= $result->account->robot->fresh()->tracking_started_at?->format('Y-m-d');
         $this->reset('editingResultId', 'amount', 'comment');
         session()->flash('calendar-status', 'Операция сохранена.');

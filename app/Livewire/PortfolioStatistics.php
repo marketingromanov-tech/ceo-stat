@@ -6,6 +6,7 @@ use App\Models\Robot;
 use App\Services\PortfolioStatisticsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class PortfolioStatistics extends Component
@@ -53,6 +54,19 @@ class PortfolioStatistics extends Component
         $this->appliedStatisticsStartDate = null;
         $this->appliedStatisticsEndDate = null;
         $this->resetValidation(['statisticsStartDate', 'statisticsEndDate']);
+    }
+
+    #[On('trading-result-saved')]
+    public function refreshAfterTradingResultSaved(int $robotId, int $accountId, string $date): void
+    {
+        $query = Robot::query()->whereKey($robotId)->whereHas('account', fn ($accountQuery) => $accountQuery->whereKey($accountId));
+        if (auth()->user()->role->value === 'viewer') {
+            $query->whereHas('viewers', fn ($viewerQuery) => $viewerQuery->whereKey(auth()->id()));
+        }
+
+        if (! $query->exists()) {
+            $this->skipRender();
+        }
     }
 
     public function render(PortfolioStatisticsService $statisticsService): View

@@ -4,6 +4,9 @@ namespace App\Livewire;
 
 use App\Models\AuditLog;
 use App\Models\Robot;
+use App\Models\RobotStatusPeriod;
+use App\Services\RobotStatisticsService;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -15,6 +18,27 @@ class RobotManager extends Component
     public bool $isActive = true;
     public ?int $deletingId = null;
     public string $deletePassword = '';
+    public string $statusFilter = 'all';
+    public string $sortBy = 'name';
+    public string $statisticsPeriod = 'all';
+
+    public function selectStatusFilter(string $filter): void
+    {
+        abort_unless(in_array($filter, ['all', 'active', 'paused', 'stopped'], true), 422);
+        $this->statusFilter = $filter;
+    }
+
+    public function selectSort(string $sort): void
+    {
+        abort_unless(in_array($sort, ['profit', 'return', 'name'], true), 422);
+        $this->sortBy = $sort;
+    }
+
+    public function selectStatisticsPeriod(string $period): void
+    {
+        abort_unless(in_array($period, ['all', '7_days', '30_days', '3_months', '6_months', 'current_year'], true), 422);
+        $this->statisticsPeriod = $period;
+    }
 
     public function edit(int $id): void
     {
@@ -107,13 +131,65 @@ class RobotManager extends Component
         AuditLog::query()->create(['user_id' => auth()->id(), 'action' => $action, 'auditable_type' => Robot::class, 'auditable_id' => $robot->id, 'old_values' => $old, 'new_values' => $robot->toArray(), 'ip_address' => request()->ip(), 'user_agent' => request()->userAgent()]);
     }
 
-    public function render(): View
+    public function render(RobotStatisticsService $statisticsService): View
     {
-        $robots = Robot::query()->with('account')
+        $robots = Robot::query()->with(['account', 'statusPeriods' => fn ($query) => $query->latest('starts_at')->latest('id')])
             ->when(auth()->user()->role->value === 'viewer', fn ($query) => $query->whereHas('viewers', fn ($viewerQuery) => $viewerQuery->whereKey(auth()->id())))
-            ->latest()
             ->get();
 
-        return view('livewire.robot-manager', ['robots' => $robots])->layout('components.layouts.app', ['title' => 'Роботы — CEO Stat']);
+        [$from, $to] = $this->statisticsRange();
+        $cards = $robots->map(function (Robot $robot) use ($statisticsService, $from, $to): array {
+            $currentPeriod = $robot->statusPeriods->first(
+                fn (RobotStatusPeriod $period) => $period->starts_at->lte(today()) && (! $period->ends_at || $period->ends_at->gte(today()))
+            );
+            $status = match ($currentPeriod?->status) {
+                RobotStatusPeriod::STATUS_PAUSED => 'paused',
+                RobotStatusPeriod::STATUS_DIAGNOSTICS, RobotStatusPeriod::STATUS_MAINTENANCE => 'stopped',
+                default => 'active',
+            };
+            $statistics = $statisticsService->calculate($robot, $from, $to);
+            $lastResult = $robot->account?->results()->withinTrackingPeriod()->latest('traded_at')->latest('sequence')->first();
+
+            return [
+                'robot' => $robot,
+                'status' => $status,
+                'profit' => $statistics['kpi']['profit'],
+                'return_percent' => $statistics['kpi']['return_percent'],
+                'last_result' => $lastResult,
+            ];
+        })->when($this->statusFilter !== 'all', fn ($cards) => $cards->where('status', $this->statusFilter));
+
+        $cards = (match ($this->sortBy) {
+            'profit' => $cards->sortByDesc('profit'),
+            'return' => $cards->sortByDesc('return_percent'),
+            default => $cards->sortBy(fn (array $card) => mb_strtolower($card['robot']->name)),
+        })->values();
+
+        return view('livewire.robot-manager', [
+            'robots' => $robots,
+            'cards' => $cards,
+            'statisticsPeriodLabel' => match ($this->statisticsPeriod) {
+                '7_days' => '7 дней',
+                '30_days' => '30 дней',
+                '3_months' => '3 месяца',
+                '6_months' => '6 месяцев',
+                'current_year' => 'текущий год',
+                default => 'всё время',
+            },
+        ])->layout('components.layouts.app', ['title' => 'Роботы — CEO Stat']);
+    }
+
+    private function statisticsRange(): array
+    {
+        $today = CarbonImmutable::today();
+
+        return match ($this->statisticsPeriod) {
+            '7_days' => [$today->subDays(6), $today],
+            '30_days' => [$today->subDays(29), $today],
+            '3_months' => [$today->subMonths(3), $today],
+            '6_months' => [$today->subMonths(6), $today],
+            'current_year' => [$today->startOfYear(), $today],
+            default => [null, null],
+        };
     }
 }

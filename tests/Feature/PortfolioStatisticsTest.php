@@ -142,6 +142,46 @@ class PortfolioStatisticsTest extends TestCase
             ->assertDontSeeHtml('id="portfolio-robots-chart"');
     }
 
+    public function test_viewer_does_not_refresh_portfolio_for_unassigned_robot_event(): void
+    {
+        $viewer = User::factory()->create(['role' => UserRole::Viewer, 'is_active' => true]);
+        $assigned = $this->robot('Assigned refresh robot');
+        $hidden = $this->robot('Hidden refresh robot');
+        $viewer->robots()->attach($assigned);
+        $this->addResult($assigned, '2026-08-01', 25);
+
+        $portfolio = Livewire::actingAs($viewer)->test(PortfolioStatistics::class)
+            ->assertSee('25,00');
+
+        $this->addResult($hidden, '2026-08-02', 876.54);
+
+        $portfolio->dispatch('trading-result-saved', robotId: $hidden->id, accountId: $hidden->account->id, date: '2026-08-02')
+            ->assertSee('25,00')
+            ->assertDontSee('Hidden refresh robot')
+            ->assertDontSee('876,54');
+    }
+
+    public function test_portfolio_refreshes_for_an_accessible_robot_event(): void
+    {
+        $viewer = User::factory()->create(['role' => UserRole::Viewer, 'is_active' => true]);
+        $robot = $this->robot('Accessible refresh robot');
+        $viewer->robots()->attach($robot);
+        $this->addResult($robot, '2026-08-01', 25);
+
+        $portfolio = Livewire::actingAs($viewer)->test(PortfolioStatistics::class);
+        TradingResult::query()->create([
+            'trading_account_id' => $robot->account->id,
+            'traded_at' => '2026-08-02',
+            'sequence' => 1,
+            'amount' => 43.21,
+            'source' => 'manual',
+        ]);
+
+        $portfolio->dispatch('trading-result-saved', robotId: $robot->id, accountId: $robot->account->id, date: '2026-08-02')
+            ->assertSee('68,21')
+            ->assertSee('43,21');
+    }
+
     private function robot(string $name, string $trackingStartedAt = '2026-01-01'): Robot
     {
         $robot = Robot::query()->create(['name' => $name, 'tracking_started_at' => $trackingStartedAt]);

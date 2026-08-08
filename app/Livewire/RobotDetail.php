@@ -76,6 +76,17 @@ class RobotDetail extends Component
         $this->selectedDate = $selectedDate;
     }
 
+    #[On('trading-result-saved')]
+    public function refreshAfterTradingResultSaved(int $robotId, int $accountId, string $date): void
+    {
+        if ($this->robot->id !== $robotId || $this->robot->account?->id !== $accountId) {
+            $this->skipRender();
+            return;
+        }
+
+        $this->robot->refresh();
+    }
+
     public function previousMonth(): void
     {
         $this->calendarMonth = CarbonImmutable::createFromFormat('Y-m', $this->calendarMonth)->subMonth()->format('Y-m');

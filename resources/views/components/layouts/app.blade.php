@@ -28,6 +28,9 @@
         @if(auth()->user()->role->value === 'admin')<a href="{{ route('users.index') }}" class="flex flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-bold {{ request()->routeIs('users.*') ? 'text-[#605bff]' : 'text-[#030229]/45' }}"><span class="grid size-5 place-items-center rounded-md bg-current/10 text-[10px]">U</span>Люди</a>@endif
         <form method="POST" action="{{ route('logout') }}" class="contents">@csrf<button class="group flex flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-bold text-[#030229]/45 transition-colors hover:text-red-500" aria-label="Выйти из аккаунта"><svg class="size-5 transition-transform duration-200 group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg><span>Выход</span></button></form>
     </nav>
+    @if(in_array(auth()->user()->role->value, ['admin', 'operator'], true))
+        <livewire:quick-result-entry :context-robot-id="request()->routeIs('robots.show') ? request()->route('robot')->getKey() : null" />
+    @endif
     <div class="pb-20 lg:pb-0 lg:pl-[218px]">
     @endauth
     {{ $slot }}
