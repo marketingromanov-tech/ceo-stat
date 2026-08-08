@@ -31,4 +31,53 @@ class RobotDetailStatsTest extends TestCase
             ->assertSee('0,375%')
             ->assertSee('75,00');
     }
+
+    public function test_statistics_charts_receive_daily_data_and_infinite_profit_factor_is_explicit(): void
+    {
+        $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
+        $robot = Robot::query()->create(['name' => 'Charts', 'tracking_started_at' => '2026-07-20']);
+        $account = TradingAccount::query()->create(['robot_id' => $robot->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000]);
+        TradingResult::query()->create(['trading_account_id' => $account->id, 'traded_at' => '2026-07-20', 'sequence' => 1, 'amount' => 25, 'source' => 'manual']);
+
+        Livewire::actingAs($operator)->test(RobotDetail::class, ['robot' => $robot])
+            ->assertSeeHtml('id="robot-growth-chart"')
+            ->assertSeeHtml('id="robot-daily-chart"')
+            ->assertSeeHtml('id="robot-monthly-chart"')
+            ->assertSeeHtml('id="robot-statistics-chart-data"')
+            ->assertSee('2026-07-20')
+            ->assertSee('∞');
+    }
+
+    public function test_custom_statistics_period_is_applied_without_changing_url(): void
+    {
+        $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
+        $robot = Robot::query()->create(['name' => 'Period robot', 'tracking_started_at' => '2026-07-01']);
+        $account = TradingAccount::query()->create(['robot_id' => $robot->id, 'name' => 'Main', 'platform' => 'manual', 'currency' => 'USD', 'initial_deposit' => 1000]);
+        TradingResult::query()->create(['trading_account_id' => $account->id, 'traded_at' => '2026-07-01', 'sequence' => 1, 'amount' => 100, 'source' => 'manual']);
+        TradingResult::query()->create(['trading_account_id' => $account->id, 'traded_at' => '2026-07-10', 'sequence' => 1, 'amount' => -20, 'source' => 'manual']);
+
+        Livewire::actingAs($operator)->test(RobotDetail::class, ['robot' => $robot])
+            ->call('selectStatisticsPeriod', 'custom')
+            ->set('statisticsStartDate', '2026-07-10')
+            ->set('statisticsEndDate', '2026-07-10')
+            ->call('applyCustomStatisticsPeriod')
+            ->assertHasNoErrors()
+            ->assertSet('appliedStatisticsStartDate', '2026-07-10')
+            ->assertSet('appliedStatisticsEndDate', '2026-07-10')
+            ->assertSee('10.07.2026 — 10.07.2026')
+            ->assertSee('-20,00');
+    }
+
+    public function test_custom_statistics_period_validates_dates(): void
+    {
+        $operator = User::factory()->create(['role' => UserRole::Operator, 'is_active' => true]);
+        $robot = Robot::query()->create(['name' => 'Validation robot']);
+
+        Livewire::actingAs($operator)->test(RobotDetail::class, ['robot' => $robot])
+            ->call('selectStatisticsPeriod', 'custom')
+            ->set('statisticsStartDate', '2026-07-10')
+            ->set('statisticsEndDate', '2026-07-09')
+            ->call('applyCustomStatisticsPeriod')
+            ->assertHasErrors(['statisticsEndDate']);
+    }
 }

@@ -10,6 +10,7 @@ use App\Models\RobotStatusPeriod;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
 use App\Services\AccountBalanceService;
+use App\Services\RobotStatisticsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
@@ -29,6 +30,11 @@ class RobotDetail extends Component
     public string $calendarMonth;
     public ?string $selectedDate = null;
     public int $accountRevision = 0;
+    public string $statisticsPeriod = 'all';
+    public string $statisticsStartDate = '';
+    public string $statisticsEndDate = '';
+    public ?string $appliedStatisticsStartDate = null;
+    public ?string $appliedStatisticsEndDate = null;
 
     public string $financeType = 'deposit';
     public string $financeAmount = '';
@@ -82,6 +88,59 @@ class RobotDetail extends Component
         $this->calendarMonth = CarbonImmutable::createFromFormat('Y-m', $this->calendarMonth)->addMonth()->format('Y-m');
         $this->selectedDate = null;
         $this->dispatch('robot-period-selected', month: $this->calendarMonth);
+    }
+
+    public function selectStatisticsPeriod(string $period): void
+    {
+        abort_unless(in_array($period, ['all', '7_days', '30_days', '3_months', '6_months', 'current_year', 'custom'], true), 422);
+        $this->statisticsPeriod = $period;
+
+        if ($period === 'custom') {
+            $this->statisticsStartDate = $this->appliedStatisticsStartDate ?? now()->subDays(29)->format('Y-m-d');
+            $this->statisticsEndDate = $this->appliedStatisticsEndDate ?? now()->format('Y-m-d');
+            return;
+        }
+
+        [$from, $to] = $this->statisticsPeriodDates($period);
+        $this->appliedStatisticsStartDate = $from?->toDateString();
+        $this->appliedStatisticsEndDate = $to?->toDateString();
+        $this->resetValidation(['statisticsStartDate', 'statisticsEndDate']);
+    }
+
+    public function applyCustomStatisticsPeriod(): void
+    {
+        $validated = $this->validate([
+            'statisticsStartDate' => ['required', 'date', 'before_or_equal:today'],
+            'statisticsEndDate' => ['required', 'date', 'after_or_equal:statisticsStartDate', 'before_or_equal:today'],
+        ]);
+
+        $this->statisticsPeriod = 'custom';
+        $this->appliedStatisticsStartDate = $validated['statisticsStartDate'];
+        $this->appliedStatisticsEndDate = $validated['statisticsEndDate'];
+    }
+
+    public function resetStatisticsPeriod(): void
+    {
+        $this->statisticsPeriod = 'all';
+        $this->statisticsStartDate = '';
+        $this->statisticsEndDate = '';
+        $this->appliedStatisticsStartDate = null;
+        $this->appliedStatisticsEndDate = null;
+        $this->resetValidation(['statisticsStartDate', 'statisticsEndDate']);
+    }
+
+    private function statisticsPeriodDates(string $period): array
+    {
+        $today = CarbonImmutable::today();
+
+        return match ($period) {
+            '7_days' => [$today->subDays(6), $today],
+            '30_days' => [$today->subDays(29), $today],
+            '3_months' => [$today->subMonths(3), $today],
+            '6_months' => [$today->subMonths(6), $today],
+            'current_year' => [$today->startOfYear(), $today],
+            default => [null, null],
+        };
     }
 
     public function saveAccount(): void
@@ -233,7 +292,7 @@ class RobotDetail extends Component
         return $dates;
     }
 
-    public function render(): View
+    public function render(RobotStatisticsService $statisticsService): View
     {
         $accountId = $this->robot->account?->id;
         $monthStart = CarbonImmutable::createFromFormat('Y-m', $this->calendarMonth)->startOfMonth();
@@ -286,6 +345,9 @@ class RobotDetail extends Component
             ? $account->financialOperations()->latest('operation_date')->latest('id')->limit(50)->get()
             : collect();
 
+        $statisticsFrom = $this->appliedStatisticsStartDate ? CarbonImmutable::parse($this->appliedStatisticsStartDate) : null;
+        $statisticsTo = $this->appliedStatisticsEndDate ? CarbonImmutable::parse($this->appliedStatisticsEndDate) : null;
+
         return view('livewire.robot-detail', [
             'monthProfit' => $monthProfit,
             'monthPercent' => $deposit > 0 ? $monthProfit / $deposit * 100 : 0,
@@ -304,6 +366,7 @@ class RobotDetail extends Component
             'financeSummary' => $financeSummary,
             'financialOperations' => $financialOperations,
             'statusPeriods' => $this->robot->statusPeriods()->latest('starts_at')->latest('id')->get(),
+            'statistics' => $statisticsService->calculate($this->robot, $statisticsFrom, $statisticsTo),
             'recentResults' => $accountId
                 ? TradingResult::query()
                     ->where('trading_account_id', $accountId)

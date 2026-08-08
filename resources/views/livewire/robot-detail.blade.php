@@ -54,4 +54,93 @@
     <div class="mt-6">
         @include('livewire.partials.robot-status-periods')
     </div>
+
+    <section class="mt-6 space-y-6" aria-labelledby="robot-statistics-title">
+        @php
+            $statisticsPeriodLabels = ['all' => 'Всё время', '7_days' => '7 дней', '30_days' => '30 дней', '3_months' => '3 месяца', '6_months' => '6 месяцев', 'current_year' => 'Текущий год', 'custom' => 'Свой период'];
+            $periodFrom = $statistics['period']['from'] ? \Carbon\CarbonImmutable::parse($statistics['period']['from']) : null;
+            $periodTo = \Carbon\CarbonImmutable::parse($statistics['period']['to']);
+            $statisticsRangeLabel = $statisticsPeriod === 'all'
+                ? 'За всё время'.($periodFrom ? ' • с '.$periodFrom->format('d.m.Y') : '')
+                : ($periodFrom ? $periodFrom->format('d.m.Y').' — '.$periodTo->format('d.m.Y') : 'До '.$periodTo->format('d.m.Y'));
+        @endphp
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#605bff]">Аналитика</p>
+                <h2 id="robot-statistics-title" class="mt-1 text-xl font-extrabold text-[#030229]">Статистика робота</h2>
+                <p class="mt-1 text-sm text-[#030229]/45">{{ $statistics['period']['has_data'] ? $statisticsRangeLabel : 'За выбранный период данных нет' }}</p>
+            </div>
+            <div class="w-full xl:max-w-3xl">
+                <select wire:change="selectStatisticsPeriod($event.target.value)" class="form-input sm:hidden" aria-label="Период статистики">
+                    @foreach($statisticsPeriodLabels as $value => $label)<option value="{{ $value }}" @selected($statisticsPeriod === $value)>{{ $label }}</option>@endforeach
+                </select>
+                @if($statisticsPeriod !== 'all')<button type="button" wire:click="resetStatisticsPeriod" class="mt-2 text-xs font-extrabold text-[#605bff] sm:hidden">Сбросить</button>@endif
+                <div class="hidden flex-wrap justify-end gap-2 sm:flex">
+                    @foreach($statisticsPeriodLabels as $value => $label)
+                        <button type="button" wire:click="selectStatisticsPeriod('{{ $value }}')" class="rounded-lg px-3 py-2 text-xs font-extrabold transition {{ $statisticsPeriod === $value ? 'bg-[#605bff] text-white' : 'bg-white text-[#030229]/60 hover:bg-[#605bff]/10 hover:text-[#605bff]' }}">{{ $label }}</button>
+                    @endforeach
+                    @if($statisticsPeriod !== 'all')<button type="button" wire:click="resetStatisticsPeriod" class="px-2 py-2 text-xs font-extrabold text-[#605bff]">Сбросить</button>@endif
+                </div>
+                @if($statisticsPeriod === 'custom')
+                    <form wire:submit="applyCustomStatisticsPeriod" class="mt-3 grid gap-3 rounded-xl bg-white p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
+                        <div><label class="form-label">С даты</label><input type="date" wire:model="statisticsStartDate" max="{{ now()->format('Y-m-d') }}" class="form-input">@error('statisticsStartDate')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        <div><label class="form-label">По дату</label><input type="date" wire:model="statisticsEndDate" max="{{ now()->format('Y-m-d') }}" class="form-input">@error('statisticsEndDate')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        <button class="btn-primary sm:mt-[22px]">Применить</button>
+                    </form>
+                @endif
+            </div>
+        </div>
+
+        @php($kpi = $statistics['kpi'])
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <article class="stat-card"><p class="stat-label">{{ $statisticsPeriod === 'all' ? 'Прибыль за всё время' : 'Прибыль за период' }}</p><p class="mt-2 text-2xl font-extrabold {{ $kpi['profit'] >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($kpi['profit'], 2, ',', ' ') }}</p></article>
+            <article class="stat-card"><p class="stat-label">Доходность</p><p class="mt-2 text-2xl font-extrabold {{ $kpi['return_percent'] >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ number_format($kpi['return_percent'], 3, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">Средний % в рабочий день</p><p class="mt-2 text-2xl font-extrabold text-[#030229]">{{ number_format($kpi['average_daily_percent'], 3, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">Рабочих дней</p><p class="mt-2 text-2xl font-extrabold text-[#030229]">{{ $kpi['working_days'] }}</p></article>
+            <article class="stat-card"><p class="stat-label">Прибыльных дней</p><p class="mt-2 text-2xl font-extrabold text-[#605bff]">{{ $kpi['profitable_days'] }}</p></article>
+            <article class="stat-card"><p class="stat-label">Процент прибыльных дней</p><p class="mt-2 text-2xl font-extrabold text-[#030229]">{{ number_format($kpi['profitable_days_percent'], 1, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">Максимальная просадка</p><p class="mt-2 text-2xl font-extrabold text-red-700">{{ number_format($kpi['max_drawdown'], 2, ',', ' ') }}</p><p class="mt-1 text-xs font-bold text-red-700/70">{{ number_format($kpi['max_drawdown_percent'], 3, ',', ' ') }}%</p></article>
+            <article class="stat-card"><p class="stat-label">Profit Factor</p><p class="mt-2 text-2xl font-extrabold text-[#030229]">{{ $kpi['profit_factor_state'] === 'infinite' ? '∞' : ($kpi['profit_factor_state'] === 'undefined' ? '—' : number_format($kpi['profit_factor'], 3, ',', ' ')) }}</p><p class="mt-1 text-[10px] text-[#030229]/40">Прибыль {{ number_format($kpi['gross_profit'], 2, ',', ' ') }} / убыток {{ number_format($kpi['gross_loss'], 2, ',', ' ') }}</p></article>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-2">
+            @php($quality = $statistics['quality'])
+            <article class="rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)]">
+                <h3 class="text-lg font-extrabold text-[#030229]">Качество торговли</h3>
+                <dl class="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3">
+                    <div><dt class="stat-label">Прибыльные дни</dt><dd class="mt-1 font-extrabold text-[#605bff]">{{ $quality['profitable_days'] }}</dd></div>
+                    <div><dt class="stat-label">Убыточные дни</dt><dd class="mt-1 font-extrabold text-red-700">{{ $quality['losing_days'] }}</dd></div>
+                    <div><dt class="stat-label">Нулевые дни</dt><dd class="mt-1 font-extrabold">{{ $quality['zero_days'] }}</dd></div>
+                    <div><dt class="stat-label">Средняя прибыль</dt><dd class="mt-1 font-extrabold text-[#605bff]">{{ number_format($quality['average_profitable_day'], 2, ',', ' ') }}</dd></div>
+                    <div><dt class="stat-label">Средний убыток</dt><dd class="mt-1 font-extrabold text-red-700">{{ number_format($quality['average_losing_day'], $quality['average_losing_day'] != 0 && abs($quality['average_losing_day']) < 0.01 ? 4 : 2, ',', ' ') }}</dd></div>
+                    <div><dt class="stat-label">Лучший день</dt><dd class="mt-1 font-extrabold">{{ number_format($quality['best_day'], 2, ',', ' ') }}</dd></div>
+                    <div><dt class="stat-label">Худший день</dt><dd class="mt-1 font-extrabold">{{ number_format($quality['worst_day'], 2, ',', ' ') }}</dd></div>
+                    <div><dt class="stat-label">Макс. серия +</dt><dd class="mt-1 font-extrabold">{{ $quality['max_winning_streak'] }}</dd></div>
+                    <div><dt class="stat-label">Макс. серия −</dt><dd class="mt-1 font-extrabold">{{ $quality['max_losing_streak'] }}</dd></div>
+                    <div><dt class="stat-label">Текущая серия</dt><dd class="mt-1 font-extrabold">{{ $quality['current_streak']['type'] === 'winning' ? '+' : ($quality['current_streak']['type'] === 'losing' ? '−' : '0') }}{{ $quality['current_streak']['length'] }}</dd></div>
+                </dl>
+            </article>
+
+            @php($last30 = $statistics['last_30'])
+            @php($last30DaysTitle = $last30['days'] === 1 ? 'Последний 1 рабочий день' : 'Последние '.$last30['days'].' рабочих '.(in_array($last30['days'] % 10, [2, 3, 4], true) && !in_array($last30['days'] % 100, [12, 13, 14], true) ? 'дня' : 'дней'))
+            <article class="rounded-xl bg-[#030229] p-5 text-white shadow-[0_6px_24px_rgba(3,2,41,0.12)]">
+                <h3 class="text-lg font-extrabold">{{ $last30DaysTitle }}</h3>
+                <dl class="mt-4 grid grid-cols-2 gap-x-5 gap-y-5 sm:grid-cols-3">
+                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-white/50">Прибыль</dt><dd class="mt-1 text-lg font-extrabold">{{ number_format($last30['profit'], 2, ',', ' ') }}</dd></div>
+                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-white/50">Средний результат</dt><dd class="mt-1 text-lg font-extrabold">{{ number_format($last30['average_result'], 2, ',', ' ') }}</dd></div>
+                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-white/50">Средний % в день</dt><dd class="mt-1 text-lg font-extrabold">{{ number_format($last30['average_daily_percent'], 3, ',', ' ') }}%</dd></div>
+                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-white/50">Прибыльные дни</dt><dd class="mt-1 text-lg font-extrabold">{{ $last30['profitable_days'] }}</dd></div>
+                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-white/50">Убыточные дни</dt><dd class="mt-1 text-lg font-extrabold">{{ $last30['losing_days'] }}</dd></div>
+                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-white/50">Процент прибыльных</dt><dd class="mt-1 text-lg font-extrabold">{{ number_format($last30['profitable_days_percent'], 1, ',', ' ') }}%</dd></div>
+                </dl>
+            </article>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-3">
+            @foreach([['robot-growth-chart', 'Рост счёта', 'growth'], ['robot-daily-chart', 'Результат по дням', 'daily'], ['robot-monthly-chart', 'Прибыль по месяцам', 'monthly']] as [$chartId, $chartTitle, $chartKey])
+                <article class="rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)]"><h3 class="font-extrabold text-[#030229]">{{ $chartTitle }}</h3><div class="mt-4 h-64">@if(count($statistics['charts'][$chartKey]['values']))<canvas id="{{ $chartId }}"></canvas>@else<div class="grid h-full place-items-center rounded-lg bg-[#fafafb] px-4 text-center text-sm text-[#030229]/40">За выбранный период данных нет</div>@endif</div></article>
+            @endforeach
+        </div>
+        <script id="robot-statistics-chart-data" type="application/json">@json($statistics['charts'])</script>
+    </section>
 </main>

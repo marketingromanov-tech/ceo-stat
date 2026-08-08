@@ -28,7 +28,11 @@ function sparklineOptions(centerValues = false) {
 
 function createChart(id, configuration) {
     const canvas = document.getElementById(id);
-    if (!canvas) return;
+    if (!canvas) {
+        dashboardCharts.get(id)?.destroy();
+        dashboardCharts.delete(id);
+        return;
+    }
     dashboardCharts.get(id)?.destroy();
     dashboardCharts.set(id, new Chart(canvas, configuration));
 }
@@ -57,6 +61,16 @@ function renderDashboardCharts() {
         data: { labels: data.monthly.labels, datasets: [{ label: 'Результат', data: data.monthly.values, borderColor: '#ff8f6b', backgroundColor: 'rgba(255,143,107,.12)', fill: true, tension: .42, pointRadius: data.monthly.values.length === 1 ? 4 : 0 }] },
         options: sparklineOptions(),
     });
+}
+
+function renderRobotStatisticsCharts() {
+    const source = document.getElementById('robot-statistics-chart-data');
+    if (!source) return;
+    const data = JSON.parse(source.textContent);
+    const options = sparklineOptions(true);
+    createChart('robot-growth-chart', { type: 'line', data: { labels: data.growth.labels, datasets: [{ label: 'Баланс', data: data.growth.values, borderColor: '#605bff', backgroundColor: 'rgba(96,91,255,.10)', fill: true, tension: .3 }] }, options });
+    createChart('robot-daily-chart', { type: 'bar', data: { labels: data.daily.labels, datasets: [{ label: 'Результат', data: data.daily.values, backgroundColor: data.daily.values.map(value => value < 0 ? '#b91c1c' : '#605bff'), borderRadius: 4 }] }, options });
+    createChart('robot-monthly-chart', { type: 'bar', data: { labels: data.monthly.labels, datasets: [{ label: 'Прибыль', data: data.monthly.values, backgroundColor: data.monthly.values.map(value => value < 0 ? '#b91c1c' : '#605bff'), borderRadius: 5 }] }, options });
 }
 
 function openMobileSummaries() {
@@ -133,9 +147,14 @@ document.addEventListener('click', (event) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     renderDashboardCharts();
+    renderRobotStatisticsCharts();
     openMobileSummaries();
+});
+document.addEventListener('livewire:init', () => {
+    Livewire.hook('morph.updated', () => requestAnimationFrame(renderRobotStatisticsCharts));
 });
 document.addEventListener('livewire:navigated', () => {
     renderDashboardCharts();
+    renderRobotStatisticsCharts();
     openMobileSummaries();
 });
