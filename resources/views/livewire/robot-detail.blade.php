@@ -19,8 +19,6 @@
         <article class="min-w-[78vw] snap-start rounded-xl bg-white p-5 shadow-[0_6px_24px_rgba(3,2,41,0.05)] sm:min-w-0"><div class="mb-4 size-10 rounded-full bg-violet-50"></div><p class="text-xs font-bold uppercase tracking-wider text-stone-400">Среднее в день</p><p class="mt-2 text-2xl font-extrabold text-[#030229]">{{ number_format($dailyAverage, 2, ',', ' ') }}</p></article>
     </section>
 
-    @include('livewire.partials.robot-status-periods')
-
     @if(auth()->user()->role->value === 'viewer')
         <details class="group mb-5 overflow-hidden rounded-xl bg-white sm:hidden"><summary class="flex cursor-pointer list-none items-center justify-between p-4"><div><p class="text-[10px] font-extrabold uppercase tracking-wider text-[#030229]/40">История</p><h2 class="mt-1 font-extrabold">Последние записи</h2></div><span class="text-xl text-[#605bff] transition group-open:rotate-180">⌄</span></summary><div class="max-h-96 space-y-2 overflow-y-auto border-t border-[#030229]/5 p-3">@forelse($recentResults as $result)<div class="flex items-center justify-between rounded-lg bg-[#fafafb] p-3"><div><p class="text-sm font-bold">{{ $robot->name }}</p><p class="text-xs text-[#030229]/40">{{ $result->traded_at->format('d.m.Y') }}</p></div><span class="font-extrabold {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount >= 0 ? '+' : '' }}{{ number_format((float) $result->amount, 2, ',', ' ') }}</span></div>@empty<p class="p-3 text-sm text-stone-500">Записей пока нет.</p>@endforelse</div></details>
     @endif
@@ -51,5 +49,9 @@
 
     <div class="mt-6">
         @include('livewire.partials.robot-finance')
+    </div>
+
+    <div class="mt-6">
+        @include('livewire.partials.robot-status-periods')
     </div>
 </main>
