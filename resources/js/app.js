@@ -28,7 +28,11 @@ function sparklineOptions(centerValues = false) {
 
 function createChart(id, configuration) {
     const canvas = document.getElementById(id);
-    if (!canvas) return;
+    if (!canvas) {
+        dashboardCharts.get(id)?.destroy();
+        dashboardCharts.delete(id);
+        return;
+    }
     dashboardCharts.get(id)?.destroy();
     dashboardCharts.set(id, new Chart(canvas, configuration));
 }
@@ -56,6 +60,52 @@ function renderDashboardCharts() {
         type: 'line',
         data: { labels: data.monthly.labels, datasets: [{ label: 'Результат', data: data.monthly.values, borderColor: '#ff8f6b', backgroundColor: 'rgba(255,143,107,.12)', fill: true, tension: .42, pointRadius: data.monthly.values.length === 1 ? 4 : 0 }] },
         options: sparklineOptions(),
+    });
+}
+
+function renderRobotStatisticsCharts() {
+    const source = document.getElementById('robot-statistics-chart-data');
+    if (!source) return;
+    const data = JSON.parse(source.textContent);
+    const options = sparklineOptions(true);
+    createChart('robot-growth-chart', { type: 'line', data: { labels: data.growth.labels, datasets: [{ label: 'Баланс', data: data.growth.values, borderColor: '#605bff', backgroundColor: 'rgba(96,91,255,.10)', fill: true, tension: .3 }] }, options });
+    createChart('robot-daily-chart', { type: 'bar', data: { labels: data.daily.labels, datasets: [{ label: 'Результат', data: data.daily.values, backgroundColor: data.daily.values.map(value => value < 0 ? '#b91c1c' : '#605bff'), borderRadius: 4 }] }, options });
+    createChart('robot-monthly-chart', { type: 'bar', data: { labels: data.monthly.labels, datasets: [{ label: 'Прибыль', data: data.monthly.values, backgroundColor: data.monthly.values.map(value => value < 0 ? '#b91c1c' : '#605bff'), borderRadius: 5 }] }, options });
+}
+
+function renderPortfolioStatisticsCharts() {
+    const source = document.getElementById('portfolio-statistics-chart-data');
+    if (!source) {
+        ['portfolio-growth-chart', 'portfolio-daily-chart', 'portfolio-monthly-chart', 'portfolio-robots-chart']
+            .forEach(id => createChart(id, {}));
+        return;
+    }
+    const data = JSON.parse(source.textContent);
+    const palette = ['#605bff', '#5b93ff', '#ff8f6b', '#ffc327', '#22a06b', '#a855f7', '#0ea5e9', '#f43f5e'];
+
+    createChart('portfolio-growth-chart', {
+        type: 'line',
+        data: { labels: data.growth.labels, datasets: [{ label: 'Equity', data: data.growth.values, borderColor: '#605bff', backgroundColor: 'rgba(96,91,255,.10)', fill: true, tension: .3 }] },
+        options: sparklineOptions(true),
+    });
+    createChart('portfolio-daily-chart', {
+        type: 'bar',
+        data: { labels: data.daily.labels, datasets: [{ label: 'Результат', data: data.daily.values, backgroundColor: data.daily.values.map(value => value < 0 ? '#b91c1c' : '#605bff'), borderRadius: 4 }] },
+        options: sparklineOptions(true),
+    });
+    createChart('portfolio-monthly-chart', {
+        type: 'bar',
+        data: { labels: data.monthly.labels, datasets: [{ label: 'Прибыль', data: data.monthly.values, backgroundColor: data.monthly.values.map(value => value < 0 ? '#b91c1c' : '#605bff'), borderRadius: 5 }] },
+        options: sparklineOptions(true),
+    });
+
+    const robotOptions = sparklineOptions(true);
+    robotOptions.indexAxis = 'y';
+    robotOptions.plugins.tooltip.callbacks.label = context => `${context.dataset.label}: ${money.format(context.parsed.x ?? 0)}%`;
+    createChart('portfolio-robots-chart', {
+        type: 'bar',
+        data: { labels: data.robots.labels, datasets: [{ label: 'Доля', data: data.robots.values, backgroundColor: data.robots.values.map((value, index) => value < 0 ? '#b91c1c' : palette[index % palette.length]), borderRadius: 5 }] },
+        options: robotOptions,
     });
 }
 
@@ -133,9 +183,19 @@ document.addEventListener('click', (event) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     renderDashboardCharts();
+    renderRobotStatisticsCharts();
+    renderPortfolioStatisticsCharts();
     openMobileSummaries();
+});
+document.addEventListener('livewire:init', () => {
+    Livewire.hook('morph.updated', () => requestAnimationFrame(() => {
+        renderRobotStatisticsCharts();
+        renderPortfolioStatisticsCharts();
+    }));
 });
 document.addEventListener('livewire:navigated', () => {
     renderDashboardCharts();
+    renderRobotStatisticsCharts();
+    renderPortfolioStatisticsCharts();
     openMobileSummaries();
 });

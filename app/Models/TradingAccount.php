@@ -34,4 +34,9 @@ class TradingAccount extends Model
     {
         return $this->hasMany(TradingResult::class);
     }
+
+    public function financialOperations(): HasMany
+    {
+        return $this->hasMany(FinancialOperation::class);
+    }
 }

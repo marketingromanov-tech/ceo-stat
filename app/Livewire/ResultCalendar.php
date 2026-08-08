@@ -4,8 +4,10 @@ namespace App\Livewire;
 
 use App\Models\AuditLog;
 use App\Models\Robot;
+use App\Models\RobotStatusPeriod;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
+use App\Services\ManualTradingResultService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -49,7 +51,6 @@ class ResultCalendar extends Component
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->subMonth()->format('Y-m');
         $this->resetEditor();
-
         $this->notifyPeriodChanged();
 
         return null;
@@ -59,7 +60,6 @@ class ResultCalendar extends Component
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->addMonth()->format('Y-m');
         $this->resetEditor();
-
         $this->notifyPeriodChanged();
 
         return null;
@@ -80,6 +80,14 @@ class ResultCalendar extends Component
     public function selectDashboardMonth(string $month): void
     {
         $this->selectMonth($month);
+    }
+
+    #[On('trading-result-saved')]
+    public function refreshAfterTradingResultSaved(int $robotId, int $accountId, string $date): void
+    {
+        if ($this->robotId !== $robotId || $this->accountId !== $accountId) {
+            $this->skipRender();
+        }
     }
 
     public function selectDate(string $date): void
@@ -103,7 +111,7 @@ class ResultCalendar extends Component
         $this->comment = $result->comment ?? '';
     }
 
-    public function save(): void
+    public function save(ManualTradingResultService $resultService): void
     {
         abort_unless(! $this->readOnly && in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
 
@@ -120,21 +128,23 @@ class ResultCalendar extends Component
             'amount.between' => 'Сумма выходит за допустимый диапазон.',
         ]);
 
-        $result = $this->editingResultId
-            ? $this->dayResultsQuery()->findOrFail($this->editingResultId)
-            : new TradingResult([
-                'trading_account_id' => $validated['accountId'],
-                'traded_at' => $validated['selectedDate'],
-                'source' => 'manual',
-                'sequence' => ((int) $this->dayResultsQuery()->max('sequence')) + 1,
-            ]);
-        $result->fill([
-            'amount' => $validated['amount'],
-            'comment' => $validated['comment'] ?: null,
-            'created_by' => auth()->id(),
-        ])->save();
-
-        $this->audit('result.saved', $result, $result->getChanges());
+        if ($this->editingResultId) {
+            $result = $this->dayResultsQuery()->findOrFail($this->editingResultId);
+            $result->fill([
+                'amount' => $validated['amount'],
+                'comment' => $validated['comment'] ?: null,
+                'created_by' => auth()->id(),
+            ])->save();
+            $this->audit('result.saved', $result, $result->getChanges());
+        } else {
+            $result = $resultService->create(
+                TradingAccount::query()->findOrFail($validated['accountId']),
+                CarbonImmutable::parse($validated['selectedDate']),
+                (float) $validated['amount'],
+                $validated['comment'] ?: null,
+                auth()->user(),
+            );
+        }
         $this->trackingStartedAt ??= $result->account->robot->fresh()->tracking_started_at?->format('Y-m-d');
         $this->reset('editingResultId', 'amount', 'comment');
         session()->flash('calendar-status', 'Операция сохранена.');
@@ -183,14 +193,18 @@ class ResultCalendar extends Component
                 : null;
         });
         $robotBreakdown = $this->readOnly && ! $this->robotId ? $this->robotBreakdown($start, $end) : collect();
+        $robotStatuses = $this->robotId ? $this->robotStatusesForMonth($start, $end) : collect();
         $days = collect(range(1, $start->daysInMonth))->map(fn (int $day) => $start->setDay($day));
 
         return view('livewire.result-calendar', [
             'account' => $this->accountId ? TradingAccount::query()->with('robot')->find($this->accountId) : null,
-            'days' => $days, 'results' => $results, 'monthLabel' => $start->translatedFormat('F Y'),
+            'days' => $days,
+            'results' => $results,
+            'monthLabel' => $start->translatedFormat('F Y'),
             'leadingBlanks' => $start->isoWeekday() - 1,
             'trackingStartedAt' => $this->trackingStartedAt,
             'robotBreakdown' => $robotBreakdown,
+            'robotStatuses' => $robotStatuses,
             'dayResults' => $this->selectedDate && $this->accountId ? $this->dayResultsQuery()->get() : collect(),
         ]);
     }
@@ -206,6 +220,35 @@ class ResultCalendar extends Component
             ->groupBy('traded_at')
             ->get()
             ->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'));
+    }
+
+    private function robotStatusesForMonth(CarbonImmutable $start, CarbonImmutable $end): Collection
+    {
+        $periods = RobotStatusPeriod::query()
+            ->where('robot_id', $this->robotId)
+            ->whereDate('starts_at', '<=', $end->format('Y-m-d'))
+            ->where(function ($query) use ($start): void {
+                $query->whereNull('ends_at')
+                    ->orWhereDate('ends_at', '>=', $start->format('Y-m-d'));
+            })
+            ->orderBy('starts_at')
+            ->get();
+
+        $statuses = collect();
+
+        foreach ($periods as $period) {
+            $periodStart = CarbonImmutable::parse($period->starts_at)->max($start);
+            $periodEnd = CarbonImmutable::parse($period->ends_at ?? $end)->min($end);
+
+            for ($day = $periodStart; $day->lte($periodEnd); $day = $day->addDay()) {
+                $statuses->put($day->format('Y-m-d'), [
+                    'status' => $period->status,
+                    'comment' => $period->comment,
+                ]);
+            }
+        }
+
+        return $statuses;
     }
 
     private function percentageDeposit(): float
