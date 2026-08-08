@@ -3,6 +3,15 @@
         <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Статистика</p><h2 class="mt-1 text-lg font-extrabold text-[#030229]">{{ $readOnly && !$robotId ? 'Общий календарь' : 'Календарь робота' }}</h2><p class="mt-1 text-sm text-stone-500">{{ $readOnly ? ($robotId ? 'Режим только для просмотра' : 'Сумма результатов доступных роботов по дням') : 'Выберите день для ручного ввода' }}</p></div>
         @if(!$readOnly)<span class="rounded-lg bg-[#605bff]/10 px-3 py-1.5 text-xs font-bold text-[#605bff]">{{ $account ? 'Счёт настроен' : 'Счёт не настроен' }}</span>@endif
     </div>
+
+    @if($robotId)
+        <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-stone-500 sm:text-xs">
+            <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-emerald-500"></span>Работал</span>
+            <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-red-500"></span>Ремонт / диагностика</span>
+            <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-orange-400"></span>Пауза</span>
+        </div>
+    @endif
+
     <div class="mb-4 flex items-center justify-between rounded-lg bg-[#fafafb] p-2">
         <button wire:click="previousMonth" class="btn-secondary px-3" aria-label="Предыдущий месяц">←</button>
         <strong class="capitalize">{{ $monthLabel }}</strong>
@@ -12,18 +21,34 @@
         @foreach(['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] as $index => $weekday)<div class="py-2 {{ $index >= 5 ? 'text-amber-900' : '' }}">{{ $weekday }}</div>@endforeach
         @for($i = 0; $i < $leadingBlanks; $i++)<div></div>@endfor
         @foreach($days as $day)
-            @php($result = $results->get($day->format('Y-m-d')))
-            @php($robotsForDay = $robotBreakdown->get($day->format('Y-m-d'), collect()))
-            @php($isLocked = !$readOnly && $trackingStartedAt && $day->format('Y-m-d') < $trackingStartedAt)
-            <button wire:click="selectDate('{{ $day->format('Y-m-d') }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
-                class="group relative min-h-14 min-w-0 overflow-hidden rounded-md border p-1 text-left transition sm:min-h-24 sm:overflow-visible sm:rounded-lg sm:p-2 {{ $selectedDate === $day->format('Y-m-d') ? 'border-[#605bff] ring-2 ring-[#605bff]/10' : 'border-[#030229]/8' }} {{ $isLocked ? 'cursor-not-allowed bg-[#030229]/5 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-[#605bff]/5 hover:border-[#605bff]/25' : 'bg-white hover:border-[#605bff]/25') }}">
-                <span class="text-[10px] font-extrabold sm:text-xs {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
+            @php($dateKey = $day->format('Y-m-d'))
+            @php($result = $results->get($dateKey))
+            @php($robotsForDay = $robotBreakdown->get($dateKey, collect()))
+            @php($statusForDay = $robotStatuses->get($dateKey))
+            @php($isLocked = !$readOnly && $trackingStartedAt && $dateKey < $trackingStartedAt)
+            @php($statusCode = $statusForDay['status'] ?? null)
+            @php($isRepair = in_array($statusCode, ['maintenance', 'diagnostics'], true))
+            @php($isPaused = $statusCode === 'paused')
+            @php($isWorked = $robotId && $result && !$isRepair && !$isPaused)
+            @php($statusLabel = $isRepair ? ($statusCode === 'diagnostics' ? 'Диагностика' : 'Ремонт') : ($isPaused ? 'Пауза' : ($isWorked ? 'Работал' : null)))
+
+            <button wire:click="selectDate('{{ $dateKey }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
+                class="group relative min-h-14 min-w-0 overflow-hidden rounded-md border p-1 text-left transition sm:min-h-24 sm:overflow-visible sm:rounded-lg sm:p-2 {{ $selectedDate === $dateKey ? 'border-[#605bff] ring-2 ring-[#605bff]/10' : 'border-[#030229]/8' }} {{ $isLocked ? 'cursor-not-allowed bg-[#030229]/5 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-[#605bff]/5 hover:border-[#605bff]/25' : 'bg-white hover:border-[#605bff]/25') }}">
+                <span class="flex items-center justify-between gap-1">
+                    <span class="text-[10px] font-extrabold sm:text-xs {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
+                    @if($robotId && !$isLocked && $statusLabel)
+                        <span class="size-2.5 shrink-0 rounded-full {{ $isRepair ? 'bg-red-500' : ($isPaused ? 'bg-orange-400' : 'bg-emerald-500') }}" title="{{ $statusLabel }}{{ !empty($statusForDay['comment']) ? ': '.$statusForDay['comment'] : '' }}"></span>
+                    @endif
+                </span>
                 @if($isLocked)<span class="mt-1 hidden text-[9px] font-bold text-stone-400 sm:block">До начала учёта</span>@endif
                 @if($result)
                     <span class="mt-1 block truncate text-[9px] font-extrabold sm:mt-2 sm:text-xs {{ $result->amount >= 0 ? 'text-[#605bff]' : 'text-red-700' }}">{{ $result->amount > 0 ? '+' : '' }}{{ number_format((float)$result->amount, 2, ',', ' ') }}</span>
                     @if($result->daily_percent !== null)
                         <span class="mt-0.5 block truncate text-[8px] font-bold sm:text-[10px] {{ $result->daily_percent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
                     @endif
+                @endif
+                @if($robotId && $statusLabel)
+                    <span class="mt-1 hidden truncate text-[8px] font-bold text-stone-400 sm:block">{{ $statusLabel }}</span>
                 @endif
                 @if($readOnly && $robotsForDay->isNotEmpty())
                     <span class="pointer-events-none absolute bottom-[calc(100%+0.5rem)] left-1/2 z-30 hidden w-56 -translate-x-1/2 rounded-xl bg-stone-950 p-3 text-left text-white shadow-xl group-hover:block">
