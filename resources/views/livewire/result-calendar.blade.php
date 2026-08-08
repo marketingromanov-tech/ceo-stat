@@ -47,9 +47,6 @@
                         <span class="mt-0.5 block truncate text-[8px] font-bold sm:text-[10px] {{ $result->daily_percent >= 0 ? 'text-[#605bff]' : 'text-red-600' }}">{{ $result->daily_percent > 0 ? '+' : '' }}{{ number_format((float)$result->daily_percent, 3, ',', ' ') }}%</span>
                     @endif
                 @endif
-                @if($robotId && $statusLabel)
-                    <span class="mt-1 hidden truncate text-[8px] font-bold text-stone-400 sm:block">{{ $statusLabel }}</span>
-                @endif
                 @if($readOnly && $robotsForDay->isNotEmpty())
                     <span class="pointer-events-none absolute bottom-[calc(100%+0.5rem)] left-1/2 z-30 hidden w-56 -translate-x-1/2 rounded-xl bg-stone-950 p-3 text-left text-white shadow-xl group-hover:block">
                         <span class="mb-2 block text-[10px] font-bold uppercase tracking-wider text-white/60">{{ $day->format('d.m.Y') }}</span>
