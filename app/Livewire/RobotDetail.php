@@ -4,9 +4,11 @@ namespace App\Livewire;
 
 use App\Enums\UserRole;
 use App\Models\AuditLog;
+use App\Models\FinancialOperation;
 use App\Models\Robot;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
+use App\Services\AccountBalanceService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
@@ -27,6 +29,11 @@ class RobotDetail extends Component
     public ?string $selectedDate = null;
     public int $accountRevision = 0;
 
+    public string $financeType = 'deposit';
+    public string $financeAmount = '';
+    public string $financeDate = '';
+    public string $financeComment = '';
+
     public function mount(Robot $robot): void
     {
         if (auth()->user()->role === UserRole::Viewer) {
@@ -35,11 +42,16 @@ class RobotDetail extends Component
 
         $this->robot = $robot;
         $this->calendarMonth = now()->format('Y-m');
+        $this->financeDate = now()->format('Y-m-d');
         $account = $robot->account;
         if ($account) {
-            $this->name = $account->name; $this->broker = $account->broker ?? ''; $this->platform = $account->platform;
-            $this->externalLogin = $account->external_login ?? ''; $this->currency = $account->currency;
-            $this->initialDeposit = (string) $account->initial_deposit; $this->isActive = $account->is_active;
+            $this->name = $account->name;
+            $this->broker = $account->broker ?? '';
+            $this->platform = $account->platform;
+            $this->externalLogin = $account->external_login ?? '';
+            $this->currency = $account->currency;
+            $this->initialDeposit = (string) $account->initial_deposit;
+            $this->isActive = $account->is_active;
         }
     }
 
@@ -68,17 +80,99 @@ class RobotDetail extends Component
     {
         abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
         $data = $this->validate([
-            'name' => ['required', 'string', 'max:255'], 'broker' => ['nullable', 'string', 'max:255'],
-            'platform' => ['required', Rule::in(['manual', 'mt4', 'mt5'])], 'externalLogin' => ['nullable', 'string', 'max:255'],
-            'currency' => ['required', 'string', 'size:3'], 'initialDeposit' => ['required', 'numeric', 'min:0'],
+            'name' => ['required', 'string', 'max:255'],
+            'broker' => ['nullable', 'string', 'max:255'],
+            'platform' => ['required', Rule::in(['manual', 'mt4', 'mt5'])],
+            'externalLogin' => ['nullable', 'string', 'max:255'],
+            'currency' => ['required', 'string', 'size:3'],
+            'initialDeposit' => ['required', 'numeric', 'min:0'],
             'isActive' => ['boolean'],
         ]);
-        $account = $this->robot->account()->firstOrNew(); $old = $account->exists ? $account->toArray() : null;
-        $account->fill(['name' => $data['name'], 'broker' => $data['broker'] ?: null, 'platform' => $data['platform'], 'external_login' => $data['externalLogin'] ?: null, 'currency' => strtoupper($data['currency']), 'initial_deposit' => $data['initialDeposit'], 'is_active' => $data['isActive']])->save();
-        AuditLog::query()->create(['user_id' => auth()->id(), 'action' => $old ? 'account.updated' : 'account.created', 'auditable_type' => TradingAccount::class, 'auditable_id' => $account->id, 'old_values' => $old, 'new_values' => $account->toArray(), 'ip_address' => request()->ip(), 'user_agent' => request()->userAgent()]);
+
+        $account = $this->robot->account()->firstOrNew();
+        $old = $account->exists ? $account->toArray() : null;
+        $account->fill([
+            'name' => $data['name'],
+            'broker' => $data['broker'] ?: null,
+            'platform' => $data['platform'],
+            'external_login' => $data['externalLogin'] ?: null,
+            'currency' => strtoupper($data['currency']),
+            'initial_deposit' => $data['initialDeposit'],
+            'is_active' => $data['isActive'],
+        ])->save();
+
+        AuditLog::query()->create([
+            'user_id' => auth()->id(),
+            'action' => $old ? 'account.updated' : 'account.created',
+            'auditable_type' => TradingAccount::class,
+            'auditable_id' => $account->id,
+            'old_values' => $old,
+            'new_values' => $account->toArray(),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
         $this->robot->refresh();
         $this->accountRevision++;
         session()->flash('account-status', 'Счёт настроен.');
+    }
+
+    public function saveFinancialOperation(AccountBalanceService $balanceService): void
+    {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+
+        $account = $this->robot->account()->first();
+        if (! $account) {
+            session()->flash('finance_status', 'Сначала настрой торговый счёт.');
+            return;
+        }
+
+        $validated = $this->validate([
+            'financeType' => ['required', Rule::in(FinancialOperation::types())],
+            'financeAmount' => ['required', 'numeric', 'min:0.01'],
+            'financeDate' => ['required', 'date'],
+            'financeComment' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        FinancialOperation::create([
+            'trading_account_id' => $account->id,
+            'type' => $validated['financeType'],
+            'amount' => $validated['financeAmount'],
+            'currency' => $account->currency,
+            'operation_date' => $validated['financeDate'],
+            'source' => 'manual',
+            'comment' => $validated['financeComment'] ?: null,
+            'created_by' => auth()->id(),
+        ]);
+
+        $balanceService->refreshCurrentBalance($account);
+
+        $this->financeType = FinancialOperation::TYPE_DEPOSIT;
+        $this->financeAmount = '';
+        $this->financeDate = now()->format('Y-m-d');
+        $this->financeComment = '';
+        $this->robot->refresh();
+        $this->accountRevision++;
+
+        session()->flash('finance_status', 'Финансовая операция добавлена.');
+    }
+
+    public function deleteFinancialOperation(int $operationId, AccountBalanceService $balanceService): void
+    {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+
+        $account = $this->robot->account()->first();
+        if (! $account) {
+            return;
+        }
+
+        $operation = $account->financialOperations()->whereKey($operationId)->firstOrFail();
+        $operation->delete();
+        $balanceService->refreshCurrentBalance($account);
+
+        $this->robot->refresh();
+        $this->accountRevision++;
+        session()->flash('finance_status', 'Финансовая операция удалена.');
     }
 
     public function render(): View
@@ -86,6 +180,7 @@ class RobotDetail extends Component
         $accountId = $this->robot->account?->id;
         $monthStart = CarbonImmutable::createFromFormat('Y-m', $this->calendarMonth)->startOfMonth();
         $monthEnd = $monthStart->endOfMonth();
+
         $results = TradingResult::query()
             ->withinTrackingPeriod()
             ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId), fn ($query) => $query->whereRaw('1 = 0'))
@@ -93,17 +188,37 @@ class RobotDetail extends Component
         $monthProfit = (float) (clone $results)->sum('amount');
         $accountedDays = (clone $results)->distinct('traded_at')->count('traded_at');
         $deposit = (float) ($this->robot->account?->initial_deposit ?? 0);
+
         $allTimeResults = TradingResult::query()
             ->withinTrackingPeriod()
             ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId), fn ($query) => $query->whereRaw('1 = 0'));
         $allTimeProfit = (float) (clone $allTimeResults)->sum('amount');
         $allTimeDays = (clone $allTimeResults)->distinct('traded_at')->count('traded_at');
+
         $todayResults = TradingResult::query()
             ->withinTrackingPeriod()
             ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId), fn ($query) => $query->whereRaw('1 = 0'))
             ->whereDate('traded_at', today());
         $todayProfit = (float) (clone $todayResults)->sum('amount');
         $todayOperations = (clone $todayResults)->count();
+
+        $account = $this->robot->account()->first();
+        $financeSummary = $account
+            ? app(AccountBalanceService::class)->summary($account)
+            : [
+                'initial_deposit' => 0,
+                'trading_profit' => 0,
+                'deposits' => 0,
+                'withdrawals' => 0,
+                'commissions' => 0,
+                'expenses' => 0,
+                'adjustments' => 0,
+                'current_balance' => 0,
+            ];
+
+        $financialOperations = $account
+            ? $account->financialOperations()->latest('operation_date')->latest('id')->limit(50)->get()
+            : collect();
 
         return view('livewire.robot-detail', [
             'monthProfit' => $monthProfit,
@@ -118,6 +233,8 @@ class RobotDetail extends Component
             'todayPercent' => $deposit > 0 ? $todayProfit / $deposit * 100 : 0,
             'todayOperations' => $todayOperations,
             'todayAverage' => $todayOperations > 0 ? $todayProfit / $todayOperations : 0,
+            'financeSummary' => $financeSummary,
+            'financialOperations' => $financialOperations,
             'recentResults' => $accountId
                 ? TradingResult::query()
                     ->where('trading_account_id', $accountId)
