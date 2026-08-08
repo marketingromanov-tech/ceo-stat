@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\FinancialOperation;
 use App\Models\Robot;
+use App\Models\RobotStatusPeriod;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
 use App\Services\AccountBalanceService;
@@ -34,6 +35,11 @@ class RobotDetail extends Component
     public string $financeDate = '';
     public string $financeComment = '';
 
+    public string $statusType = 'diagnostics';
+    public string $statusStartDate = '';
+    public string $statusEndDate = '';
+    public string $statusComment = '';
+
     public function mount(Robot $robot): void
     {
         if (auth()->user()->role === UserRole::Viewer) {
@@ -43,6 +49,8 @@ class RobotDetail extends Component
         $this->robot = $robot;
         $this->calendarMonth = now()->format('Y-m');
         $this->financeDate = now()->format('Y-m-d');
+        $this->statusStartDate = now()->format('Y-m-d');
+
         $account = $robot->account;
         if ($account) {
             $this->name = $account->name;
@@ -146,14 +154,12 @@ class RobotDetail extends Component
         ]);
 
         $balanceService->refreshCurrentBalance($account);
-
         $this->financeType = FinancialOperation::TYPE_DEPOSIT;
         $this->financeAmount = '';
         $this->financeDate = now()->format('Y-m-d');
         $this->financeComment = '';
         $this->robot->refresh();
         $this->accountRevision++;
-
         session()->flash('finance_status', 'Финансовая операция добавлена.');
     }
 
@@ -169,10 +175,60 @@ class RobotDetail extends Component
         $operation = $account->financialOperations()->whereKey($operationId)->firstOrFail();
         $operation->delete();
         $balanceService->refreshCurrentBalance($account);
-
         $this->robot->refresh();
         $this->accountRevision++;
         session()->flash('finance_status', 'Финансовая операция удалена.');
+    }
+
+    public function saveStatusPeriod(): void
+    {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+
+        $validated = $this->validate([
+            'statusType' => ['required', Rule::in(RobotStatusPeriod::nonWorkingStatuses())],
+            'statusStartDate' => ['required', 'date'],
+            'statusEndDate' => ['nullable', 'date', 'after_or_equal:statusStartDate'],
+            'statusComment' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $this->robot->statusPeriods()->create([
+            'status' => $validated['statusType'],
+            'starts_at' => $validated['statusStartDate'],
+            'ends_at' => $validated['statusEndDate'] ?: null,
+            'comment' => $validated['statusComment'] ?: null,
+            'created_by' => auth()->id(),
+        ]);
+
+        $this->statusType = RobotStatusPeriod::STATUS_DIAGNOSTICS;
+        $this->statusStartDate = now()->format('Y-m-d');
+        $this->statusEndDate = '';
+        $this->statusComment = '';
+        session()->flash('status_period_status', 'Период простоя добавлен.');
+    }
+
+    public function deleteStatusPeriod(int $periodId): void
+    {
+        abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
+        $this->robot->statusPeriods()->whereKey($periodId)->firstOrFail()->delete();
+        session()->flash('status_period_status', 'Период простоя удалён.');
+    }
+
+    private function nonWorkingDates(): array
+    {
+        $dates = [];
+
+        foreach ($this->robot->statusPeriods()->whereIn('status', RobotStatusPeriod::nonWorkingStatuses())->get() as $period) {
+            $start = CarbonImmutable::parse($period->starts_at)->startOfDay();
+            $end = $period->ends_at
+                ? CarbonImmutable::parse($period->ends_at)->startOfDay()
+                : CarbonImmutable::today();
+
+            for ($date = $start; $date->lte($end); $date = $date->addDay()) {
+                $dates[$date->toDateString()] = true;
+            }
+        }
+
+        return $dates;
     }
 
     public function render(): View
@@ -194,6 +250,14 @@ class RobotDetail extends Component
             ->when($accountId, fn ($query) => $query->where('trading_account_id', $accountId), fn ($query) => $query->whereRaw('1 = 0'));
         $allTimeProfit = (float) (clone $allTimeResults)->sum('amount');
         $allTimeDays = (clone $allTimeResults)->distinct('traded_at')->count('traded_at');
+
+        $nonWorkingDates = $this->nonWorkingDates();
+        $allTimeWorkingDays = (clone $allTimeResults)
+            ->pluck('traded_at')
+            ->map(fn ($date) => CarbonImmutable::parse($date)->toDateString())
+            ->unique()
+            ->reject(fn (string $date) => isset($nonWorkingDates[$date]))
+            ->count();
 
         $todayResults = TradingResult::query()
             ->withinTrackingPeriod()
@@ -227,14 +291,17 @@ class RobotDetail extends Component
             'dailyAverage' => $accountedDays > 0 ? $monthProfit / $accountedDays : 0,
             'allTimeProfit' => $allTimeProfit,
             'allTimePercent' => $deposit > 0 ? $allTimeProfit / $deposit * 100 : 0,
-            'allTimeDayPercent' => $deposit > 0 && $allTimeDays > 0 ? ($allTimeProfit / $allTimeDays) / $deposit * 100 : 0,
-            'allTimeDailyAverage' => $allTimeDays > 0 ? $allTimeProfit / $allTimeDays : 0,
+            'allTimeDayPercent' => $deposit > 0 && $allTimeWorkingDays > 0 ? ($allTimeProfit / $allTimeWorkingDays) / $deposit * 100 : 0,
+            'allTimeDailyAverage' => $allTimeWorkingDays > 0 ? $allTimeProfit / $allTimeWorkingDays : 0,
+            'allTimeWorkingDays' => $allTimeWorkingDays,
+            'allTimeRecordedDays' => $allTimeDays,
             'todayProfit' => $todayProfit,
             'todayPercent' => $deposit > 0 ? $todayProfit / $deposit * 100 : 0,
             'todayOperations' => $todayOperations,
             'todayAverage' => $todayOperations > 0 ? $todayProfit / $todayOperations : 0,
             'financeSummary' => $financeSummary,
             'financialOperations' => $financialOperations,
+            'statusPeriods' => $this->robot->statusPeriods()->latest('starts_at')->latest('id')->get(),
             'recentResults' => $accountId
                 ? TradingResult::query()
                     ->where('trading_account_id', $accountId)
