@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\AuditLog;
 use App\Models\Robot;
+use App\Models\RobotStatusPeriod;
 use App\Models\TradingAccount;
 use App\Models\TradingResult;
 use Carbon\CarbonImmutable;
@@ -49,7 +50,6 @@ class ResultCalendar extends Component
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->subMonth()->format('Y-m');
         $this->resetEditor();
-
         $this->notifyPeriodChanged();
 
         return null;
@@ -59,7 +59,6 @@ class ResultCalendar extends Component
     {
         $this->month = CarbonImmutable::createFromFormat('Y-m', $this->month)->addMonth()->format('Y-m');
         $this->resetEditor();
-
         $this->notifyPeriodChanged();
 
         return null;
@@ -183,14 +182,18 @@ class ResultCalendar extends Component
                 : null;
         });
         $robotBreakdown = $this->readOnly && ! $this->robotId ? $this->robotBreakdown($start, $end) : collect();
+        $robotStatuses = $this->robotId ? $this->robotStatusesForMonth($start, $end) : collect();
         $days = collect(range(1, $start->daysInMonth))->map(fn (int $day) => $start->setDay($day));
 
         return view('livewire.result-calendar', [
             'account' => $this->accountId ? TradingAccount::query()->with('robot')->find($this->accountId) : null,
-            'days' => $days, 'results' => $results, 'monthLabel' => $start->translatedFormat('F Y'),
+            'days' => $days,
+            'results' => $results,
+            'monthLabel' => $start->translatedFormat('F Y'),
             'leadingBlanks' => $start->isoWeekday() - 1,
             'trackingStartedAt' => $this->trackingStartedAt,
             'robotBreakdown' => $robotBreakdown,
+            'robotStatuses' => $robotStatuses,
             'dayResults' => $this->selectedDate && $this->accountId ? $this->dayResultsQuery()->get() : collect(),
         ]);
     }
@@ -206,6 +209,35 @@ class ResultCalendar extends Component
             ->groupBy('traded_at')
             ->get()
             ->keyBy(fn ($item) => $item->traded_at->format('Y-m-d'));
+    }
+
+    private function robotStatusesForMonth(CarbonImmutable $start, CarbonImmutable $end): Collection
+    {
+        $periods = RobotStatusPeriod::query()
+            ->where('robot_id', $this->robotId)
+            ->whereDate('starts_at', '<=', $end->format('Y-m-d'))
+            ->where(function ($query) use ($start): void {
+                $query->whereNull('ends_at')
+                    ->orWhereDate('ends_at', '>=', $start->format('Y-m-d'));
+            })
+            ->orderBy('starts_at')
+            ->get();
+
+        $statuses = collect();
+
+        foreach ($periods as $period) {
+            $periodStart = CarbonImmutable::parse($period->starts_at)->max($start);
+            $periodEnd = CarbonImmutable::parse($period->ends_at ?? $end)->min($end);
+
+            for ($day = $periodStart; $day->lte($periodEnd); $day = $day->addDay()) {
+                $statuses->put($day->format('Y-m-d'), [
+                    'status' => $period->status,
+                    'comment' => $period->comment,
+                ]);
+            }
+        }
+
+        return $statuses;
     }
 
     private function percentageDeposit(): float
