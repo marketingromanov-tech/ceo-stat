@@ -131,6 +131,64 @@ class QuickResultEntryTest extends TestCase
         $this->assertDatabaseHas(TradingResult::class, ['trading_account_id' => $account->id, 'amount' => 0]);
     }
 
+    public function test_toggle_amount_sign_sets_minus_for_empty_value(): void
+    {
+        $operator = $this->user(UserRole::Operator);
+
+        Livewire::actingAs($operator)->test(QuickResultEntry::class)
+            ->assertSet('amount', '')
+            ->call('toggleAmountSign')
+            ->assertSet('amount', '-');
+    }
+
+    public function test_toggle_amount_sign_makes_comma_value_negative(): void
+    {
+        $operator = $this->user(UserRole::Operator);
+
+        Livewire::actingAs($operator)->test(QuickResultEntry::class)
+            ->set('amount', '9,03')
+            ->call('toggleAmountSign')
+            ->assertSet('amount', '-9,03');
+    }
+
+    public function test_toggle_amount_sign_makes_negative_value_positive(): void
+    {
+        $operator = $this->user(UserRole::Operator);
+
+        Livewire::actingAs($operator)->test(QuickResultEntry::class)
+            ->set('amount', '-9,03')
+            ->call('toggleAmountSign')
+            ->assertSet('amount', '9,03');
+    }
+
+    public function test_toggle_amount_sign_turns_zero_into_negative_zero(): void
+    {
+        $operator = $this->user(UserRole::Operator);
+
+        Livewire::actingAs($operator)->test(QuickResultEntry::class)
+            ->set('amount', '0')
+            ->call('toggleAmountSign')
+            ->assertSet('amount', '-0');
+    }
+
+    public function test_toggled_negative_value_is_saved_by_existing_flow(): void
+    {
+        $operator = $this->user(UserRole::Operator);
+        [$robot, $account] = $this->robot('Toggled negative robot');
+
+        Livewire::actingAs($operator)->test(QuickResultEntry::class)
+            ->call('open')
+            ->set('robotId', $robot->id)
+            ->set('resultDate', '2026-08-03')
+            ->set('amount', '9,03')
+            ->call('toggleAmountSign')
+            ->assertSet('amount', '-9,03')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertEqualsWithDelta(-9.03, (float) TradingResult::query()->where('trading_account_id', $account->id)->value('amount'), 0.001);
+    }
+
     public function test_robot_without_account_is_rejected(): void
     {
         $operator = $this->user(UserRole::Operator);

@@ -54,6 +54,19 @@ class QuickResultEntry extends Component
         $this->resetValidation();
     }
 
+    public function toggleAmountSign(): void
+    {
+        if ($this->amount === '') {
+            $this->amount = '-';
+
+            return;
+        }
+
+        $this->amount = str_starts_with($this->amount, '-')
+            ? ltrim($this->amount, '-')
+            : '-'.$this->amount;
+    }
+
     public function save(ManualTradingResultService $resultService): void
     {
         $this->authorizeEntry();
