@@ -203,6 +203,7 @@ class RobotDetail extends Component
         $this->statusStartDate = now()->format('Y-m-d');
         $this->statusEndDate = '';
         $this->statusComment = '';
+        $this->accountRevision++;
         session()->flash('status_period_status', 'Период простоя добавлен.');
     }
 
@@ -210,6 +211,7 @@ class RobotDetail extends Component
     {
         abort_unless(in_array(auth()->user()->role->value, ['admin', 'operator'], true), 403);
         $this->robot->statusPeriods()->whereKey($periodId)->firstOrFail()->delete();
+        $this->accountRevision++;
         session()->flash('status_period_status', 'Период простоя удалён.');
     }
 
