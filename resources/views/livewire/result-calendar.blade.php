@@ -5,10 +5,19 @@
     </div>
 
     @if($robotId)
-        <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-stone-500 sm:text-xs">
-            <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-emerald-500"></span>Работал</span>
-            <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-red-500"></span>Ремонт / диагностика</span>
-            <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-orange-400"></span>Пауза</span>
+        <div class="mb-4 text-[10px] font-bold text-stone-500 sm:text-xs" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;">
+            <span style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;">
+                <span aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:9999px;background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.10);"></span>
+                Работал
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;">
+                <span aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:9999px;background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.10);"></span>
+                Ремонт / диагностика
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;">
+                <span aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:9999px;background:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.10);"></span>
+                Пауза
+            </span>
         </div>
     @endif
 
@@ -31,13 +40,18 @@
             @php($isPaused = $statusCode === 'paused')
             @php($isWorked = $robotId && $result && !$isRepair && !$isPaused)
             @php($statusLabel = $isRepair ? ($statusCode === 'diagnostics' ? 'Диагностика' : 'Ремонт') : ($isPaused ? 'Пауза' : ($isWorked ? 'Работал' : null)))
+            @php($statusColor = $isRepair ? '#ef4444' : ($isPaused ? '#f59e0b' : '#22c55e'))
 
             <button wire:click="selectDate('{{ $dateKey }}')" @disabled((!$readOnly && !$accountId) || $isLocked)
                 class="group relative min-h-14 min-w-0 overflow-hidden rounded-md border p-1 text-left transition sm:min-h-24 sm:overflow-visible sm:rounded-lg sm:p-2 {{ $selectedDate === $dateKey ? 'border-[#605bff] ring-2 ring-[#605bff]/10' : 'border-[#030229]/8' }} {{ $isLocked ? 'cursor-not-allowed bg-[#030229]/5 opacity-60' : (($day->isToday() || $day->isWeekend()) ? 'bg-[#605bff]/5 hover:border-[#605bff]/25' : 'bg-white hover:border-[#605bff]/25') }}">
                 <span class="flex items-center justify-between gap-1">
                     <span class="text-[10px] font-extrabold sm:text-xs {{ $isLocked ? 'text-stone-400' : 'text-stone-700' }}">{{ $day->day }}</span>
                     @if($robotId && !$isLocked && $statusLabel)
-                        <span class="size-2.5 shrink-0 rounded-full {{ $isRepair ? 'bg-red-500' : ($isPaused ? 'bg-orange-400' : 'bg-emerald-500') }}" title="{{ $statusLabel }}{{ !empty($statusForDay['comment']) ? ': '.$statusForDay['comment'] : '' }}"></span>
+                        <span
+                            aria-label="{{ $statusLabel }}"
+                            title="{{ $statusLabel }}{{ !empty($statusForDay['comment']) ? ': '.$statusForDay['comment'] : '' }}"
+                            style="display:inline-block;width:10px;height:10px;min-width:10px;border-radius:9999px;background:{{ $statusColor }};box-shadow:0 0 0 2px {{ $isRepair ? 'rgba(239,68,68,.10)' : ($isPaused ? 'rgba(245,158,11,.10)' : 'rgba(34,197,94,.10)') }};"
+                        ></span>
                     @endif
                 </span>
                 @if($isLocked)<span class="mt-1 hidden text-[9px] font-bold text-stone-400 sm:block">До начала учёта</span>@endif
